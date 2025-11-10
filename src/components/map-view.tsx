@@ -39,8 +39,8 @@ export default function MapView({ buses, selectedBus, onBusSelect }: MapViewProp
                 <CardTitle className="font-headline text-destructive">Google Maps API Key Missing</CardTitle>
             </CardHeader>
             <CardContent>
-                <p>Please add your Google Maps API key to view the map.</p>
-                <p className="text-sm mt-2 text-muted-foreground">Create a <code className="p-1 rounded-sm bg-secondary">.env.local</code> file and add <code className="p-1 rounded-sm bg-secondary">NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=&lt;YOUR_KEY&gt;</code>.</p>
+                <p>The application cannot connect to Google Maps.</p>
+                <p className="text-sm mt-2 text-muted-foreground">Please ensure your <code className="p-1 rounded-sm bg-secondary">NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code> is set correctly and that billing is enabled for your project in the Google Cloud Console.</p>
             </CardContent>
         </Card>
       </div>
