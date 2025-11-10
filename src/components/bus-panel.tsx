@@ -4,7 +4,6 @@ import * as React from "react";
 import Link from 'next/link';
 import {
   ArrowLeft,
-  Bell,
   Bus as BusIcon,
   HelpCircle,
   LogOut,
@@ -21,7 +20,6 @@ import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 
 import type { Bus } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -187,7 +185,7 @@ export function BusPanel({
       </header>
 
       {selectedBus ? (
-        <div className="flex flex-col flex-1">
+        <div className="flex flex-col flex-1 min-h-0">
           <div className="p-4 border-b">
             <Button
               variant="ghost"
@@ -212,42 +210,44 @@ export function BusPanel({
               <CardDescription>Bus No: {selectedBus.number}</CardDescription>
             </CardHeader>
           </div>
-          <CardContent className="p-4 space-y-4 flex-1">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-muted-foreground">
-                Status
-              </span>
-              <span
-                className={cn(
-                  "px-2 py-1 text-xs font-semibold rounded-full",
-                  selectedBus.status === "On Time" &&
-                    "bg-green-100 text-green-800",
-                  selectedBus.status === "Delayed" &&
-                    "bg-orange-100 text-orange-800",
-                  selectedBus.status === "Early" && "bg-blue-100 text-blue-800"
-                )}
-              >
-                {selectedBus.status}
-              </span>
-            </div>
-            <Separator />
-            <div>
-              <h4 className="mb-2 text-sm font-medium text-muted-foreground">
-                Upcoming Stop
-              </h4>
-               <p className="font-bold">{selectedBus.nextStopName || 'N/A'}</p>
-               <p className="text-sm text-muted-foreground">ETA: {selectedBus.eta || 'N/A'}</p>
-            </div>
-             <Separator />
-             <div>
+          <ScrollArea className="flex-1">
+            <CardContent className="p-4 space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-muted-foreground">
+                  Status
+                </span>
+                <span
+                  className={cn(
+                    "px-2 py-1 text-xs font-semibold rounded-full",
+                    selectedBus.status === "On Time" &&
+                      "bg-green-100 text-green-800",
+                    selectedBus.status === "Delayed" &&
+                      "bg-orange-100 text-orange-800",
+                    selectedBus.status === "Early" && "bg-blue-100 text-blue-800"
+                  )}
+                >
+                  {selectedBus.status}
+                </span>
+              </div>
+              <Separator />
+              <div>
                 <h4 className="mb-2 text-sm font-medium text-muted-foreground">
-                    Live Tracking
+                  Upcoming Stop
                 </h4>
-                <p className="text-sm text-muted-foreground">
-                    {isDriving ? "You are currently providing the location for this bus." : "Help other passengers by providing this bus's live location if you are on board."}
-                </p>
-             </div>
-          </CardContent>
+                <p className="font-bold">{selectedBus.nextStopName || 'N/A'}</p>
+                <p className="text-sm text-muted-foreground">ETA: {selectedBus.eta || 'N/A'}</p>
+              </div>
+              <Separator />
+              <div>
+                  <h4 className="mb-2 text-sm font-medium text-muted-foreground">
+                      Live Tracking
+                  </h4>
+                  <p className="text-sm text-muted-foreground">
+                      {isDriving ? "You are currently providing the location for this bus." : "Help other passengers by providing this bus's live location if you are on board."}
+                  </p>
+              </div>
+            </CardContent>
+          </ScrollArea>
           <div className="grid grid-cols-2 gap-2 p-4 mt-auto border-t">
             <Button
                 onClick={handleToggleDriving}
@@ -317,13 +317,6 @@ export function BusPanel({
                           >
                             {bus.status}
                           </span>
-                           {bus.eta && (
-                            <Avatar className="w-8 h-8">
-                                <AvatarFallback className="text-xs bg-secondary">
-                                {bus.eta}
-                                </AvatarFallback>
-                            </Avatar>
-                           )}
                         </div>
                       </div>
                     </CardHeader>
