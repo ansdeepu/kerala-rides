@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useCollection } from '@/firebase';
-import { doc, updateDoc, arrayUnion, arrayRemove, getDoc, deleteDoc } from 'firebase/firestore';
+import { doc, updateDoc, getDoc, deleteDoc } from 'firebase/firestore';
 import * as z from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -32,12 +32,8 @@ import {
 } from '@/components/ui/form';
 import { useFirestore } from '@/firebase';
 import { toast } from '@/hooks/use-toast';
-import { Trash, MapPin, Edit, X } from 'lucide-react';
-import { APIProvider, Map, AdvancedMarker, useMap } from '@vis.gl/react-google-maps';
+import { Trash, Edit, X } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
-import { MapErrorBoundary } from './map-error-boundary';
-
-const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
 
 interface Stop {
   name: string;
@@ -54,47 +50,28 @@ interface Route {
 const stopSchema = z.object({
   name: z.string().min(3, 'Stop name is required.'),
   arrivalTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Please enter a valid 24-hour time (e.g., 14:30)."),
-  lat: z.coerce.number().min(-90).max(90, 'Latitude must be between -90 and 90.'),
-  lng: z.coerce.number().min(-180).max(180, 'Longitude must be between -180 and 180.'),
+  lat: z.coerce.number().min(-90, 'Lat must be > -90').max(90, 'Lat must be < 90'),
+  lng: z.coerce.number().min(-180, 'Lng must be > -180').max(180, 'Lng must be < 180'),
 });
 
 type StopFormValues = z.infer<typeof stopSchema>;
 
 function StopForm({ route, onFormSubmit }: { route: Route; onFormSubmit: () => void }) {
   const db = useFirestore();
-  const map = useMap();
   const [editingStop, setEditingStop] = React.useState<Stop | null>(null);
-  const [mapLoadError, setMapLoadError] = React.useState(false);
-  
-  const [selectedPosition, setSelectedPosition] = React.useState<{ lat: number; lng: number } | null>(null);
-  const mapCenter = { lat: 9.2647, lng: 76.7874 }; // Pathanamthitta default
 
   const form = useForm<StopFormValues>({
     resolver: zodResolver(stopSchema),
     defaultValues: {
       name: '',
       arrivalTime: '',
-      lat: mapCenter.lat,
-      lng: mapCenter.lng,
+      lat: 0,
+      lng: 0,
     }
   });
 
   const { formState: { isSubmitting } } = form;
-
-  React.useEffect(() => {
-    if (selectedPosition) {
-      form.setValue('lat', selectedPosition.lat);
-      form.setValue('lng', selectedPosition.lng);
-    }
-  }, [selectedPosition, form]);
   
-  const handleMapClick = (event: google.maps.MapMouseEvent) => {
-    if (event.detail.latLng) {
-      setSelectedPosition(event.detail.latLng);
-      map?.panTo(event.detail.latLng);
-    }
-  };
-
   const handleEditClick = (stop: Stop) => {
     setEditingStop(stop);
     form.reset({
@@ -103,17 +80,11 @@ function StopForm({ route, onFormSubmit }: { route: Route; onFormSubmit: () => v
       lat: stop.location.lat,
       lng: stop.location.lng,
     });
-    setSelectedPosition(stop.location);
-    if(map) {
-      map.panTo(stop.location);
-      map.setZoom(14);
-    }
   };
 
   const cancelEdit = () => {
     setEditingStop(null);
-    form.reset({ name: '', arrivalTime: '', lat: mapCenter.lat, lng: mapCenter.lng });
-    setSelectedPosition(null);
+    form.reset({ name: '', arrivalTime: '', lat: 0, lng: 0 });
   };
 
   const handleDeleteStop = async (stopToDelete: Stop) => {
@@ -123,7 +94,6 @@ function StopForm({ route, onFormSubmit }: { route: Route; onFormSubmit: () => v
         const routeDoc = await getDoc(routeRef);
         if (routeDoc.exists()) {
             const existingStops = routeDoc.data().stops || [];
-            // Find the specific stop to remove. This is more robust than relying on the object itself.
             const updatedStops = existingStops.filter((s: Stop) => 
                 !(s.name === stopToDelete.name && s.arrivalTime === stopToDelete.arrivalTime && s.location.lat === stopToDelete.location.lat && s.location.lng === stopToDelete.location.lng)
             );
@@ -164,7 +134,7 @@ function StopForm({ route, onFormSubmit }: { route: Route; onFormSubmit: () => v
         }
       } else {
         await updateDoc(routeRef, {
-          stops: arrayUnion(newStopData),
+            stops: [...(route.stops || []), newStopData],
         });
         toast({ title: 'Stop Added!', description: `"${values.name}" has been added to the route.` });
       }
@@ -180,7 +150,7 @@ function StopForm({ route, onFormSubmit }: { route: Route; onFormSubmit: () => v
   };
   
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 p-4">
       <div>
         <h4 className="font-semibold mb-2">Existing Stops:</h4>
         {route.stops.length > 0 ? (
@@ -259,46 +229,15 @@ function StopForm({ route, onFormSubmit }: { route: Route; onFormSubmit: () => v
             name="arrivalTime"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Arrival Time</FormLabel>
+                <FormLabel>Arrival Time (24h format)</FormLabel>
                 <FormControl>
-                  <Input type="time" {...field} />
+                  <Input placeholder="e.g., 14:30" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
           
-          <div>
-            <FormLabel>Stop Location</FormLabel>
-            <CardDescription className="mb-2">Click on the map to select a location for the stop.</CardDescription>
-            {mapLoadError ? (
-                 <div className="text-destructive p-4 border-l-4 border-destructive bg-destructive/10 rounded-md">
-                    <h4 className="font-bold">Map Loading Error</h4>
-                    <p className="text-sm">The map could not connect to Google Maps. This may be due to an invalid API key or a billing issue.</p>
-                 </div>
-            ) : (
-                <div className="w-full h-64 rounded-md overflow-hidden">
-                    <Map
-                      defaultCenter={mapCenter}
-                      center={selectedPosition || mapCenter}
-                      defaultZoom={10}
-                      zoom={selectedPosition ? 14 : 10}
-                      gestureHandling={'greedy'}
-                      disableDefaultUI={true}
-                      mapId="route-manager-map"
-                      onClick={handleMapClick}
-                      onError={() => setMapLoadError(true)}
-                    >
-                      {selectedPosition && (
-                        <AdvancedMarker position={selectedPosition}>
-                          <MapPin className="text-red-500 w-8 h-8" />
-                        </AdvancedMarker>
-                      )}
-                    </Map>
-                </div>
-            )}
-          </div>
-
           <div className="flex gap-4">
             <FormField
               control={form.control}
@@ -307,7 +246,7 @@ function StopForm({ route, onFormSubmit }: { route: Route; onFormSubmit: () => v
                 <FormItem className="flex-1">
                   <FormLabel>Latitude</FormLabel>
                   <FormControl>
-                    <Input type="number" step="any" readOnly placeholder="Select on map" {...field} />
+                    <Input type="number" step="any" placeholder="e.g., 9.2647" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -320,7 +259,7 @@ function StopForm({ route, onFormSubmit }: { route: Route; onFormSubmit: () => v
                 <FormItem className="flex-1">
                   <FormLabel>Longitude</FormLabel>
                   <FormControl>
-                    <Input type="number" step="any" readOnly placeholder="Select on map" {...field} />
+                    <Input type="number" step="any" placeholder="e.g., 76.7874" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -373,25 +312,20 @@ export function RouteManager() {
       <CardContent>
         {loading ? (
           <p>Loading routes...</p>
-        ) : !API_KEY ? (
-          <div className="text-destructive p-4 border-l-4 border-destructive bg-destructive/10 rounded-md">
-            <h4 className="font-bold">Google Maps API Key Error</h4>
-            <p className="text-sm">The Google Maps API key is missing. Please set the <code className="p-1 rounded-sm bg-secondary">NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code> environment variable.</p>
-          </div>
         ) : (
           <Accordion type="single" collapsible className="w-full">
             {routes?.map((route) => (
               <AccordionItem key={route.id} value={route.id}>
-                <div className="flex items-center justify-between w-full">
-                  <AccordionTrigger className="flex-grow text-left hover:no-underline px-4">
+                <div className="flex items-center w-full">
+                  <AccordionTrigger className="flex-1 hover:no-underline px-4 py-2 text-left">
                     <span>{route.name}</span>
                   </AccordionTrigger>
-                  <AlertDialog>
+                   <AlertDialog>
                       <AlertDialogTrigger asChild>
                          <Button
                           variant="ghost"
                           size="icon"
-                          className="mr-4 hover:bg-destructive/10 text-destructive hover:text-destructive"
+                          className="mr-2 text-destructive hover:text-destructive hover:bg-destructive/10"
                         >
                           <Trash className="h-4 w-4" />
                         </Button>
@@ -414,12 +348,8 @@ export function RouteManager() {
                       </AlertDialogContent>
                     </AlertDialog>
                 </div>
-                <AccordionContent className="space-y-4">
-                  <MapErrorBoundary>
-                    <APIProvider apiKey={API_KEY}>
-                        <StopForm route={route} onFormSubmit={() => refreshRouteData(route.id)} />
-                    </APIProvider>
-                  </MapErrorBoundary>
+                <AccordionContent>
+                  <StopForm route={route} onFormSubmit={() => refreshRouteData(route.id)} />
                 </AccordionContent>
               </AccordionItem>
             ))}

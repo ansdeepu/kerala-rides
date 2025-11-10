@@ -2,13 +2,14 @@
 
 import * as React from 'react';
 import { SidebarProvider, Sidebar, SidebarInset } from '@/components/ui/sidebar';
-import MapView from '@/components/map-view';
 import { BusPanel } from '@/components/bus-panel';
 import type { Bus } from '@/lib/types';
 import { useUser, useCollection } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { simulateBusMovement } from '@/lib/bus-simulator';
 import type { Route } from '@/lib/types';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { MapPin } from 'lucide-react';
 
 export default function Home() {
   const { user, loading } = useUser();
@@ -69,11 +70,22 @@ export default function Home() {
         />
       </Sidebar>
       <SidebarInset>
-        <MapView
-          buses={buses}
-          selectedBus={selectedBus}
-          onBusSelect={setSelectedBusId}
-        />
+        <div className="w-full h-full flex items-center justify-center bg-muted">
+           <Card className="max-w-md text-center">
+            <CardHeader>
+              <CardTitle className="font-headline text-primary flex items-center justify-center gap-2">
+                <MapPin />
+                Map View Disabled
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p>The interactive map is currently disabled.</p>
+              <p className="text-sm mt-2 text-muted-foreground">
+                To re-enable map functionality, a valid Google Maps API key with billing enabled is required.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
       </SidebarInset>
     </SidebarProvider>
   );
