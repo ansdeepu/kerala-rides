@@ -17,7 +17,7 @@ import {
 import { getAuth, signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 
-import type { Bus } from "@/lib/bus-data";
+import type { Bus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";

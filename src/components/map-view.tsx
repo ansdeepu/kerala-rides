@@ -9,7 +9,7 @@ import {
   InfoWindow,
 } from "@vis.gl/react-google-maps";
 import { Bus as BusIcon, Route } from "lucide-react";
-import type { Bus } from "@/lib/bus-data";
+import type { Bus } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 

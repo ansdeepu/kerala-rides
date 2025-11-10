@@ -1,6 +1,6 @@
 "use client";
 
-import type { Bus } from "@/lib/bus-data";
+import type { Bus } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,

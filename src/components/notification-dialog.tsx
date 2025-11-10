@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { toast } from "@/hooks/use-toast";
-import type { Bus } from "@/lib/bus-data";
+import type { Bus } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -110,7 +110,7 @@ export function NotificationDialog({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {bus.stops.map((stop) => (
+                      {bus.stops?.map((stop) => (
                         <SelectItem key={stop.name} value={stop.name}>
                           {stop.name}
                         </SelectItem>
