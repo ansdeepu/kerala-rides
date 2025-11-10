@@ -9,7 +9,7 @@ import {
   InfoWindow,
 } from "@vis.gl/react-google-maps";
 import { Bus as BusIcon, Route } from "lucide-react";
-import type { Bus } from "@/app/page";
+import type { Bus } from "@/lib/bus-data";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 
@@ -22,7 +22,7 @@ interface MapViewProps {
 }
 
 export default function MapView({ buses, selectedBus, onBusSelect }: MapViewProps) {
-  const mapCenter = { lat: 9.9312, lng: 76.2673 }; // Kochi, Kerala
+  const mapCenter = { lat: 9.2647, lng: 76.7874 }; // Pathanamthitta
   
   const [activeMarkerId, setActiveMarkerId] = React.useState<string | null>(null);
   
@@ -40,7 +40,7 @@ export default function MapView({ buses, selectedBus, onBusSelect }: MapViewProp
             </CardHeader>
             <CardContent>
                 <p>Please add your Google Maps API key to view the map.</p>
-                <p className="text-sm mt-2 text-muted-foreground">The app is missing the <code className="p-1 rounded-sm bg-secondary">NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code> environment variable.</p>
+                <p className="text-sm mt-2 text-muted-foreground">Create a <code className="p-1 rounded-sm bg-secondary">.env.local</code> file and add <code className="p-1 rounded-sm bg-secondary">NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=&lt;YOUR_KEY&gt;</code>.</p>
             </CardContent>
         </Card>
       </div>
@@ -54,7 +54,7 @@ export default function MapView({ buses, selectedBus, onBusSelect }: MapViewProp
           defaultCenter={mapCenter}
           center={selectedBus ? selectedBus.currentLocation : mapCenter}
           defaultZoom={9}
-          zoom={selectedBus ? 14 : 9}
+          zoom={selectedBus ? 12 : 9}
           gestureHandling={"greedy"}
           disableDefaultUI={true}
           mapId="kerala-rides-map"

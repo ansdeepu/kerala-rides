@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { toast } from "@/hooks/use-toast";
-import type { Bus } from "@/app/page";
+import type { Bus } from "@/lib/bus-data";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -69,7 +69,9 @@ export function NotificationDialog({
     
     // Note: This is a simulation. In a real app, this would trigger a backend service.
     // For now, it opens WhatsApp with a pre-filled message.
-    window.open(`https://wa.me/${phoneNumber}?text=${message}`, "_blank");
+    if (typeof window !== "undefined") {
+      window.open(`https://wa.me/${phoneNumber}?text=${message}`, "_blank");
+    }
 
     toast({
       title: "Notification Set (Simulation)",

@@ -38,7 +38,7 @@ export default function HelpPage() {
             </CardHeader>
             <CardContent>
               <p>
-                The bus locations you see on the map are part of a **simulation**. This application does not use live GPS data from actual KSRTC buses. The data is pre-defined in the project code to demonstrate how a real-time tracking app would look and feel.
+                The bus locations you see on the map are part of a **simulation**. This application does not use live GPS data from actual KSRTC buses. The data is generated in the project code to demonstrate how a real-time tracking app would look and feel.
               </p>
               <p className="mt-2 text-sm text-muted-foreground">
                 In a real-world scenario, this app would connect to a database that receives live GPS coordinates from tracking devices installed on each bus.
@@ -55,7 +55,7 @@ export default function HelpPage() {
             </CardHeader>
             <CardContent>
               <p>
-                No, this application **does not** access your phone's GPS location. Your location is not tracked or used for any feature. The map is centered on Kochi by default, and when you select a bus, it simply focuses on that bus's simulated location.
+                No, this application **does not** access your phone's GPS location. Your location is not tracked or used for any feature. The map is centered on a default location, and when you select a bus, it simply focuses on that bus's simulated location.
               </p>
             </CardContent>
           </Card>
@@ -69,7 +69,7 @@ export default function HelpPage() {
             </CardHeader>
             <CardContent>
               <p>
-                Currently, all bus routes, stops, and initial locations are hard-coded in the file <code className="bg-secondary p-1 rounded-sm">src/lib/data.ts</code>. You cannot add or change bus data through the user interface.
+                Currently, all bus routes, stops, and locations are generated in the file <code className="bg-secondary p-1 rounded-sm">src/lib/bus-data.ts</code>. You cannot add or change bus data through the user interface.
               </p>
               <p className="mt-2 text-sm text-muted-foreground">
                 To add a new bus or route, a developer would need to modify this data file directly. A future version could include an admin panel for managing this data through a form.

@@ -13,7 +13,7 @@ import {
   Share2,
 } from "lucide-react";
 
-import type { Bus } from "@/app/page";
+import type { Bus } from "@/lib/bus-data";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";

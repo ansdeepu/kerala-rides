@@ -1,6 +1,6 @@
 "use client";
 
-import type { Bus } from "@/app/page";
+import type { Bus } from "@/lib/bus-data";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -13,6 +13,7 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { toast } from "@/hooks/use-toast";
 import { Copy } from "lucide-react";
+import React from "react";
 
 interface ShareSheetProps {
   isOpen: boolean;
@@ -21,9 +22,16 @@ interface ShareSheetProps {
 }
 
 export function ShareSheet({ isOpen, onOpenChange, bus }: ShareSheetProps) {
+  const [shareUrl, setShareUrl] = React.useState("");
+
+  React.useEffect(() => {
+    if (bus && typeof window !== "undefined") {
+      setShareUrl(`${window.location.origin}/?bus=${bus.id}`);
+    }
+  }, [bus]);
+
   if (!bus) return null;
 
-  const shareUrl = `${window.location.origin}/?bus=${bus.id}`;
   const shareText = `Track KSRTC bus ${bus.number} (${bus.routeName}) with me on Kerala Rides! It's currently ${bus.status}. ETA for ${bus.nextStopName}: ${bus.eta}.`;
 
   const handleShare = async () => {
