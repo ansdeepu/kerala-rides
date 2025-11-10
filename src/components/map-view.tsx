@@ -13,7 +13,7 @@ import type { Bus } from "@/lib/data";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 
-const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "YOUR_GOOGLE_MAPS_API_KEY_HERE";
+const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
 
 interface MapViewProps {
   buses: Bus[];
@@ -31,7 +31,7 @@ export default function MapView({ buses, selectedBus, onBusSelect }: MapViewProp
     return buses.find(b => b.id === activeMarkerId);
   }, [activeMarkerId, buses]);
 
-  if (API_KEY === "YOUR_GOOGLE_MAPS_API_KEY_HERE") {
+  if (!API_KEY) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-muted">
         <Card className="max-w-md text-center">
@@ -40,7 +40,7 @@ export default function MapView({ buses, selectedBus, onBusSelect }: MapViewProp
             </CardHeader>
             <CardContent>
                 <p>Please add your Google Maps API key to view the map.</p>
-                <p className="mt-2 text-sm text-muted-foreground">Open <code className="bg-secondary p-1 rounded-sm">src/components/map-view.tsx</code> and replace the placeholder API key.</p>
+                <p className="mt-2 text-sm text-muted-foreground">The app is missing the <code className="bg-secondary p-1 rounded-sm">NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code> environment variable.</p>
             </CardContent>
         </Card>
       </div>
