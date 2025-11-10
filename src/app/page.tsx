@@ -16,7 +16,7 @@ export default function Home() {
 
   React.useEffect(() => {
     const interval = setInterval(() => {
-      setBuses(moveBuses);
+      setBuses(prevBuses => moveBuses(prevBuses));
     }, 5000); // Simulate bus movement every 5 seconds
     return () => clearInterval(interval);
   }, []);
