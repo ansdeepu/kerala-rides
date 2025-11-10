@@ -7,13 +7,14 @@ import { useState, useEffect } from 'react';
 
 
 export function useUserProfile() {
-  const { user } = useUser();
+  const { user, loading: userLoading } = useUser();
   const [isAdmin, setIsAdmin] = useState(false);
-
-  // Only try to fetch the document if the user object (and thus user.uid) exists.
+  
+  // The user's profile data from firestore
   const { data: userProfile, loading: profileLoading } = useDoc<UserProfile>(user ? `users/${user.uid}` : null);
 
   useEffect(() => {
+    // We get the admin status from the user's ID token claims
     if (user) {
       user.getIdTokenResult().then((idTokenResult) => {
         setIsAdmin(!!idTokenResult.claims.admin);
@@ -23,7 +24,9 @@ export function useUserProfile() {
     }
   }, [user]);
 
-  const loading = profileLoading || (user && typeof isAdmin === 'undefined');
+  // The overall loading state is true if either the user or profile is loading,
+  // or if we are still waiting to determine the admin status.
+  const loading = userLoading || profileLoading || (user && typeof isAdmin === 'undefined');
 
-  return { userProfile, isAdmin, loading };
+  return { userProfile, user, isAdmin, loading };
 }
