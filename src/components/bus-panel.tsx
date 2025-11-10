@@ -61,10 +61,8 @@ export function BusPanel({
   const auth = getAuth();
 
   React.useEffect(() => {
-    if (user) {
-      user.getIdTokenResult().then((idTokenResult) => {
-        setIsAdmin(!!idTokenResult.claims.admin);
-      });
+    if (user && user.email === 'ss.deepu@gmail.com') {
+      setIsAdmin(true);
     } else {
       setIsAdmin(false);
     }

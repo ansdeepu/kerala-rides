@@ -48,26 +48,17 @@ export default function AdminPage() {
   const db = useFirestore();
 
   useEffect(() => {
-    if (user) {
-      user.getIdTokenResult().then((idTokenResult) => {
-        const isAdminClaim = !!idTokenResult.claims.admin;
-        setIsAdmin(isAdminClaim);
-        if (!loading && !isAdminClaim) {
-           toast({
-            variant: 'destructive',
-            title: 'Unauthorized',
-            description: 'You do not have permission to access this page.',
-          });
-          router.push('/');
-        }
-      });
-    } else if (!loading) {
+    if (!loading) {
+      if (user && user.email === 'ss.deepu@gmail.com') {
+        setIsAdmin(true);
+      } else {
         toast({
-            variant: 'destructive',
-            title: 'Unauthorized',
-            description: 'You must be logged in to view this page.',
+          variant: 'destructive',
+          title: 'Unauthorized',
+          description: 'You do not have permission to access this page.',
         });
         router.push('/');
+      }
     }
   }, [user, loading, router]);
 

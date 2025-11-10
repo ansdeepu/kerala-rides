@@ -12,10 +12,10 @@ service cloud.firestore {
       return request.auth.uid == userId;
     }
     
-    // This function checks for a custom claim 'admin' on the user's auth token.
-    // Custom claims are more secure for role-based access control.
+    // This function checks for a specific email address.
+    // NOTE: This is less secure than using custom claims for role-based access control.
     function isAdmin() {
-        return isSignedIn() && request.auth.token.admin == true;
+        return isSignedIn() && request.auth.token.email == 'ss.deepu@gmail.com';
     }
 
     // User profiles are readable by any signed-in user.
