@@ -8,7 +8,7 @@ import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { addDoc, collection } from 'firebase/firestore';
 
-import { useUser, useFirestore } from '@/firebase';
+import { useFirestore } from '@/firebase';
 import { useUserProfile } from '@/firebase/auth/use-user-profile';
 import { Button } from '@/components/ui/button';
 import {
@@ -29,23 +29,25 @@ import {
 } from '@/components/ui/form';
 import { toast } from '@/hooks/use-toast';
 import { ArrowLeft } from 'lucide-react';
+import { RouteManager } from '@/components/route-manager';
 
 const routeFormSchema = z.object({
   name: z
     .string()
     .min(5, { message: 'Route name must be at least 5 characters long.' })
-    .describe("The name of the route (e.g., 'Pathanamthitta - Kollam')."),
+    .describe(
+      "The name of the route, including time (e.g., 'Pathanamthitta - Kollam @ 8:00 AM')."
+    ),
 });
 
 type RouteFormValues = z.infer<typeof routeFormSchema>;
 
 export default function AdminPage() {
-  const { user, loading: userLoading } = useUser();
   const { userProfile, loading: profileLoading } = useUserProfile();
   const router = useRouter();
   const db = useFirestore();
 
-  const loading = userLoading || profileLoading;
+  const loading = profileLoading;
   const isAdmin = userProfile?.role === 'admin';
 
   const form = useForm<RouteFormValues>({
@@ -89,10 +91,18 @@ export default function AdminPage() {
     }
   };
 
-  if (loading || !isAdmin) {
+  if (loading || !userProfile) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         Loading...
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p>You are not authorized to view this page.</p>
       </div>
     );
   }
@@ -111,12 +121,12 @@ export default function AdminPage() {
         </Button>
       </header>
 
-      <div className="grid gap-6">
+      <div className="grid gap-8">
         <Card>
           <CardHeader>
             <CardTitle>Create New Bus Route</CardTitle>
             <CardDescription>
-              Define a new route. You can add stops in the next step.
+              Define a new route with a name and time. You can add stops in the manager below.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -133,7 +143,7 @@ export default function AdminPage() {
                       <FormLabel>Route Name</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="e.g., Kottayam - Alappuzha"
+                          placeholder="e.g., Kottayam - Alappuzha @ 8:00 AM"
                           {...field}
                         />
                       </FormControl>
@@ -146,6 +156,8 @@ export default function AdminPage() {
             </Form>
           </CardContent>
         </Card>
+        
+        <RouteManager />
       </div>
     </div>
   );
