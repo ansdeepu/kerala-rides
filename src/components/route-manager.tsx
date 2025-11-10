@@ -109,8 +109,10 @@ export function RouteManager() {
           <Accordion type="single" collapsible className="w-full">
             {routes?.map((route) => (
               <AccordionItem key={route.id} value={route.id}>
-                <AccordionTrigger className="flex justify-between items-center">
-                  <span>{route.name}</span>
+                <div className="flex items-center justify-between w-full">
+                  <AccordionTrigger className="flex-grow">
+                    <span>{route.name}</span>
+                  </AccordionTrigger>
                   <Button
                     variant="ghost"
                     size="icon"
@@ -122,7 +124,7 @@ export function RouteManager() {
                   >
                     <Trash className="h-4 w-4 text-destructive" />
                   </Button>
-                </AccordionTrigger>
+                </div>
                 <AccordionContent className="space-y-4">
                   <div>
                     <h4 className="font-semibold mb-2">Existing Stops:</h4>
