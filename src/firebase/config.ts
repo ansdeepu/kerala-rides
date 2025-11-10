@@ -14,15 +14,7 @@ const firebaseConfig = {
 // A function to check if the config is valid.
 // It checks if all the required environment variables are set.
 function isConfigValid(config: any): boolean {
-  return !Object.values(config).some(value => value.startsWith('YOUR_'));
-}
-
-// If the config is not valid, we log an error to the console.
-// This is helpful for debugging, as it tells the developer what's missing.
-if (!isConfigValid(firebaseConfig)) {
-  console.error(
-    `Firebase config is not valid. Please make sure to set all the required environment variables.`
-  );
+  return !Object.values(config).some(value => typeof value === 'string' && value.startsWith('YOUR_'));
 }
 
 export { firebaseConfig, isConfigValid };

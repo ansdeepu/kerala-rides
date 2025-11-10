@@ -16,8 +16,14 @@ function initializeFirebase(): {
   const apps = getApps();
 
   // If no apps are initialized and the config is valid, initialize a new app.
-  if (!apps.length && isConfigValid(firebaseConfig)) {
-    initializeApp(firebaseConfig);
+  if (!apps.length) {
+    if (isConfigValid(firebaseConfig)) {
+      initializeApp(firebaseConfig);
+    } else {
+      console.error(
+        `Firebase config is not valid. Please make sure to set all the required environment variables.`
+      );
+    }
   }
 
   // Get the default app instance.
