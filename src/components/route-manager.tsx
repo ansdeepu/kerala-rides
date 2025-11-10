@@ -37,13 +37,12 @@ import { Trash } from 'lucide-react';
 interface Route {
   id: string;
   name: string;
-  stops: { name: string; location: { lat: number; lng: number } }[];
+  stops: { name: string; arrivalTime: string; location: { lat: number; lng: number } }[];
 }
 
 const stopSchema = z.object({
   name: z.string().min(3, 'Stop name is required.'),
-  lat: z.coerce.number().min(-90).max(90),
-  lng: z.coerce.number().min(-180).max(180),
+  arrivalTime: z.string().min(1, 'Arrival time is required.'),
 });
 
 type StopFormValues = z.infer<typeof stopSchema>;
@@ -54,6 +53,10 @@ export function RouteManager() {
 
   const form = useForm<StopFormValues>({
     resolver: zodResolver(stopSchema),
+    defaultValues: {
+      name: '',
+      arrivalTime: '',
+    }
   });
 
   const handleAddStop = async (routeId: string, values: StopFormValues) => {
@@ -63,14 +66,17 @@ export function RouteManager() {
       await updateDoc(routeRef, {
         stops: arrayUnion({
           name: values.name,
+          arrivalTime: values.arrivalTime,
+          // Using placeholder location for now
           location: {
-            lat: values.lat,
-            lng: values.lng,
+            lat: 9.15,
+            lng: 76.73,
           },
+          placeholder: true
         }),
       });
       toast({ title: 'Stop added successfully!' });
-      form.reset({ name: '', lat: 0, lng: 0 });
+      form.reset();
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -132,7 +138,7 @@ export function RouteManager() {
                       <ul className="list-disc pl-5 space-y-1 text-sm">
                         {route.stops.map((stop) => (
                           <li key={stop.name}>
-                            {stop.name} ({stop.location.lat}, {stop.location.lng})
+                            {stop.name} (Arrives: {stop.arrivalTime})
                           </li>
                         ))}
                       </ul>
@@ -162,34 +168,19 @@ export function RouteManager() {
                           </FormItem>
                         )}
                       />
-                      <div className="flex gap-4">
-                        <FormField
+                       <FormField
                           control={form.control}
-                          name="lat"
+                          name="arrivalTime"
                           render={({ field }) => (
-                            <FormItem className="flex-1">
-                              <FormLabel>Latitude</FormLabel>
+                            <FormItem>
+                              <FormLabel>Arrival Time</FormLabel>
                               <FormControl>
-                                <Input type="number" step="any" placeholder="9.1578" {...field} />
+                                <Input placeholder="e.g., 8:15 AM" {...field} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
                         />
-                        <FormField
-                          control={form.control}
-                          name="lng"
-                          render={({ field }) => (
-                            <FormItem className="flex-1">
-                              <FormLabel>Longitude</FormLabel>
-                              <FormControl>
-                                <Input type="number" step="any" placeholder="76.7355" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
                       <Button type="submit">Add Stop</Button>
                     </form>
                   </Form>

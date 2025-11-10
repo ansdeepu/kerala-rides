@@ -46,6 +46,7 @@
                     "type": "object",
                     "properties": {
                         "name": { "type": "string" },
+                        "arrivalTime": { "type": "string" },
                         "location": {
                             "type": "object",
                             "properties": {
@@ -53,9 +54,13 @@
                                 "lng": { "type": "number" }
                             },
                             "required": ["lat", "lng"]
+                        },
+                        "placeholder": {
+                            "type": "boolean",
+                            "description": "True if the location is a placeholder."
                         }
                     },
-                    "required": ["name", "location"]
+                    "required": ["name", "location", "arrivalTime"]
                 }
             }
         },
