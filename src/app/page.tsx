@@ -7,6 +7,7 @@ import { BusPanel } from "@/components/bus-panel";
 import type { Bus } from "@/lib/bus-data";
 import { useUser } from "@/firebase";
 import { useRouter } from "next/navigation";
+import { moveBuses } from "@/lib/bus-data";
 
 export default function Home() {
   const { user, loading } = useUser();
@@ -22,6 +23,13 @@ export default function Home() {
       router.push('/login');
     }
   }, [user, loading, router]);
+
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setBuses(currentBuses => moveBuses(currentBuses));
+    }, 5000); // Move buses every 5 seconds
+    return () => clearInterval(interval);
+  }, []);
   
   if (loading || !user) {
     return <div>Loading...</div>;
