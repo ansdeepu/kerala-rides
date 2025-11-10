@@ -32,7 +32,7 @@ import {
 } from '@/components/ui/form';
 import { useFirestore } from '@/firebase';
 import { toast } from '@/hooks/use-toast';
-import { Trash, Edit, X } from 'lucide-react';
+import { Trash, Edit, X, MapPin } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
 
 interface Stop {
@@ -152,10 +152,18 @@ function StopForm({ route, onFormSubmit }: { route: Route; onFormSubmit: () => v
       let updatedStops: Stop[];
 
       if (editingStop) {
-        const originalStopTime = editingStop.arrivalTime;
-        updatedStops = existingStops.map((s: Stop) =>
-          s.name === editingStop.name && s.arrivalTime === originalStopTime ? newStopData : s
+        // Find the index of the original stop to replace it
+        const stopIndex = existingStops.findIndex((s: Stop) => 
+            s.name === editingStop.name && s.arrivalTime === editingStop.arrivalTime
         );
+        
+        if (stopIndex > -1) {
+            updatedStops = [...existingStops];
+            updatedStops[stopIndex] = newStopData;
+        } else {
+            // Fallback if stop not found (shouldn't happen)
+            updatedStops = [...existingStops, newStopData];
+        }
         toast({ title: 'Stop Updated!', description: `"${values.name}" has been updated.` });
       } else {
         updatedStops = [...existingStops, newStopData];
@@ -186,15 +194,15 @@ function StopForm({ route, onFormSubmit }: { route: Route; onFormSubmit: () => v
       <div>
         <h4 className="font-semibold mb-2">Existing Stops:</h4>
         {route.stops.length > 0 ? (
-          <ul className="list-decimal pl-5 space-y-2 text-sm">
+          <ol className="list-decimal pl-5 space-y-2 text-sm">
             {route.stops.map((stop, index) => (
-              <li key={`${stop.name}-${index}`} className="flex justify-between items-center">
+              <li key={`${stop.name}-${index}`} className="flex justify-between items-center group">
                 <div>
-                  <strong>{stop.name}</strong> (Arrives: {stop.arrivalTime})
+                  <strong>{stop.name}</strong> - <span className="text-muted-foreground">Arrives: {stop.arrivalTime}</span>
                   <br />
-                  <span className="text-muted-foreground">Lat: {stop.location.lat.toFixed(4)}, Lng: {stop.location.lng.toFixed(4)}</span>
+                  <span className="text-xs text-muted-foreground">Lat: {stop.location.lat.toFixed(4)}, Lng: {stop.location.lng.toFixed(4)}</span>
                 </div>
-                <div className="flex gap-1">
+                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <Button variant="ghost" size="icon" onClick={() => handleEditClick(stop)}>
                     <Edit className="h-4 w-4" />
                   </Button>
@@ -224,7 +232,7 @@ function StopForm({ route, onFormSubmit }: { route: Route; onFormSubmit: () => v
                 </div>
               </li>
             ))}
-          </ul>
+          </ol>
         ) : (
           <p className="text-sm text-muted-foreground">No stops added yet for this route.</p>
         )}
@@ -261,7 +269,7 @@ function StopForm({ route, onFormSubmit }: { route: Route; onFormSubmit: () => v
             name="arrivalTime"
             render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Arrival Time (12h format)</FormLabel>
+                  <FormLabel>Arrival Time</FormLabel>
                   <FormControl>
                     <Input 
                       type="time" 
@@ -342,7 +350,7 @@ export function RouteManager() {
       <CardHeader>
         <CardTitle>Route Manager</CardTitle>
         <CardDescription>
-          Add, edit, or remove stops from existing routes. Click on a route to expand it.
+          Add, edit, or remove stops from existing routes. Stops are automatically sorted by arrival time.
         </CardDescription>
       </CardHeader>
       <CardContent>
