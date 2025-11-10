@@ -9,12 +9,11 @@ import { useRouter } from 'next/navigation';
 import { simulateBusMovement } from '@/lib/bus-simulator';
 import type { Route } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { MapPin, Bus as BusIcon, Circle, CheckCircle } from 'lucide-react';
+import { MapPin, Bus as BusIcon, Circle, CheckCircle, Navigation } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { Separator } from '@/components/ui/separator';
 
-function StopTimeline({ stops, nextStopIndex }: { stops: Stop[], nextStopIndex: number }) {
+function StopTimeline({ stops, nextStopIndex, direction }: { stops: Stop[], nextStopIndex: number, direction: 'forward' | 'backward' }) {
   if (!stops || stops.length === 0) {
     return <div className="text-center text-muted-foreground">No stops defined for this route.</div>
   }
@@ -24,7 +23,7 @@ function StopTimeline({ stops, nextStopIndex }: { stops: Stop[], nextStopIndex: 
         <div className="p-4 md:p-8">
             <ol>
                 {stops.map((stop, index) => {
-                    const isCompleted = nextStopIndex > index;
+                    const isCompleted = direction === 'forward' ? nextStopIndex > index : nextStopIndex < index;
                     const isCurrent = nextStopIndex === index;
 
                     return (
@@ -60,6 +59,7 @@ export default function Home() {
   const [buses, setBuses] = React.useState<Bus[]>([]);
   const [selectedBusId, setSelectedBusId] = React.useState<string | null>(null);
   const [isSidebarOpen, setSidebarOpen] = React.useState(true);
+  const [drivingBusId, setDrivingBusId] = React.useState<string | null>(null);
   
   const selectedBus = React.useMemo(
     () => buses.find((b) => b.id === selectedBusId) || null,
@@ -84,13 +84,13 @@ export default function Home() {
     if (!routes || routes.length === 0 || !initialBuses || initialBuses.length === 0) return;
 
     const interval = setInterval(() => {
-      setBuses((currentBuses) => simulateBusMovement(currentBuses, routes));
+      setBuses((currentBuses) => simulateBusMovement(currentBuses, routes, drivingBusId));
     }, 5000); // Move buses every 5 seconds
     return () => clearInterval(interval);
-  }, [routes, initialBuses]);
+  }, [routes, initialBuses, drivingBusId]);
 
   if (loading || routesLoading || busesLoading) {
-    return <div>Loading...</div>;
+    return <div className="flex h-screen items-center justify-center">Loading...</div>;
   }
   
   if (!user) {
@@ -120,7 +120,7 @@ export default function Home() {
                 <CardDescription>Bus No: {selectedBus.number}</CardDescription>
               </CardHeader>
               <CardContent className="h-[calc(100%-80px)]">
-                 <StopTimeline stops={selectedBus.stops || []} nextStopIndex={selectedBus.nextStopIndex} />
+                 <StopTimeline stops={selectedBus.stops || []} nextStopIndex={selectedBus.nextStopIndex} direction={selectedBus.direction}/>
               </CardContent>
             </Card>
           ) : (

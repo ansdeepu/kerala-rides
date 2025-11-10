@@ -13,9 +13,11 @@ import {
   Search,
   Share2,
   Shield,
+  Navigation,
 } from "lucide-react";
 import { getAuth, signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 
 import type { Bus } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -35,7 +37,10 @@ import { KeralaRidesLogo } from "./icons";
 import { NotificationDialog } from "./notification-dialog";
 import { ShareSheet } from "./share-sheet";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "./ui/tooltip";
-import { useUser } from "@/firebase";
+import { useUser, useFirestore } from "@/firebase";
+import { useLocation } from "@/hooks/use-location";
+import { toast } from "@/hooks/use-toast";
+
 
 interface BusPanelProps {
   buses: Bus[];
@@ -59,6 +64,57 @@ export function BusPanel({
   const [isAdmin, setIsAdmin] = React.useState(false);
   const router = useRouter();
   const auth = getAuth();
+  const db = useFirestore();
+  const [drivingBusId, setDrivingBusId] = React.useState<string | null>(null);
+
+  const { location, error, startTracking, stopTracking } = useLocation();
+
+  const isDriving = selectedBus?.id === drivingBusId;
+
+  React.useEffect(() => {
+    if (drivingBusId && location && db) {
+      const busRef = doc(db, 'buses', drivingBusId);
+      updateDoc(busRef, {
+        currentLocation: {
+          lat: location.latitude,
+          lng: location.longitude,
+        },
+        updatedAt: serverTimestamp(),
+      });
+    }
+  }, [location, drivingBusId, db]);
+
+  React.useEffect(() => {
+    if(error) {
+      toast({
+        variant: "destructive",
+        title: "Location Error",
+        description: error,
+      });
+      stopTracking();
+      setDrivingBusId(null);
+    }
+  }, [error, stopTracking]);
+
+
+  const handleToggleDriving = () => {
+    if (isDriving) {
+      stopTracking();
+      setDrivingBusId(null);
+       toast({
+        title: "Tracking Stopped",
+        description: `You are no longer providing location for bus ${selectedBus?.number}.`,
+      });
+    } else if (selectedBus) {
+      startTracking();
+      setDrivingBusId(selectedBus.id);
+      toast({
+        title: "Tracking Started!",
+        description: `You are now providing the live location for bus ${selectedBus.number}.`,
+      });
+    }
+  };
+
 
   React.useEffect(() => {
     if (user && user.email === 'ss.deepu@gmail.com') {
@@ -136,7 +192,13 @@ export function BusPanel({
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => onBusSelect(null)}
+              onClick={() => {
+                if (isDriving) {
+                  stopTracking();
+                  setDrivingBusId(null);
+                }
+                onBusSelect(null)
+              }}
               className="mb-4"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
@@ -176,11 +238,23 @@ export function BusPanel({
                <p className="font-bold">{selectedBus.nextStopName || 'N/A'}</p>
                <p className="text-sm text-muted-foreground">ETA: {selectedBus.eta || 'N/A'}</p>
             </div>
+             <Separator />
+             <div>
+                <h4 className="mb-2 text-sm font-medium text-muted-foreground">
+                    Live Tracking
+                </h4>
+                <p className="text-sm text-muted-foreground">
+                    {isDriving ? "You are currently providing the location for this bus." : "Help other passengers by providing this bus's live location if you are on board."}
+                </p>
+             </div>
           </CardContent>
           <div className="grid grid-cols-2 gap-2 p-4 mt-auto border-t">
-            <Button onClick={() => setNotificationOpen(true)}>
-              <Bell className="w-4 h-4 mr-2" />
-              Notify Me
+            <Button
+                onClick={handleToggleDriving}
+                variant={isDriving ? 'destructive' : 'default'}
+              >
+                <Navigation className={cn("w-4 h-4 mr-2", isDriving && "animate-pulse")} />
+                {isDriving ? "Stop Driving" : "Start Driving"}
             </Button>
             <Button variant="outline" onClick={() => {
                 const url = `${window.location.origin}/?bus=${selectedBus.id}`;

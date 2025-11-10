@@ -1,12 +1,32 @@
 import type { Bus, Route } from './types';
 
 // This function simulates the movement of buses along their routes.
-export function simulateBusMovement(currentBuses: Bus[], routes: Route[]): Bus[] {
+// It will not move buses that are being actively "driven" by a user.
+export function simulateBusMovement(currentBuses: Bus[], routes: Route[], drivingBusId: string | null): Bus[] {
   if (currentBuses.length === 0 || routes.length === 0) {
     return currentBuses;
   }
 
+  const now = new Date();
+
   return currentBuses.map(bus => {
+    // If a user is actively driving this bus, don't simulate its movement.
+    // Also, if the bus has been updated in the last 15 seconds, assume it's live data.
+    const lastUpdated = bus.updatedAt?.toDate ? bus.updatedAt.toDate() : new Date(0);
+    const secondsSinceUpdate = (now.getTime() - lastUpdated.getTime()) / 1000;
+
+    if (bus.id === drivingBusId || secondsSinceUpdate < 15) {
+      const route = routes.find(r => r.id === bus.routeId);
+       const nextStop = route?.stops[bus.nextStopIndex];
+      return {
+        ...bus,
+        routeName: route ? route.name : 'Unknown Route',
+        stops: route ? route.stops : [],
+        nextStopName: nextStop?.name || 'N/A',
+        eta: nextStop ? '1 min' : 'N/A',
+      };
+    }
+
     const route = routes.find(r => r.id === bus.routeId);
     if (!route || route.stops.length < 2) {
       // If no route or not enough stops, don't move the bus
