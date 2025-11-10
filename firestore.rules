@@ -20,10 +20,13 @@ service cloud.firestore {
         return getRole() == 'admin';
     }
 
-    // User profiles are readable by anyone, but only writable by the owner.
+    // User profiles are readable by any signed-in user.
+    // A user can create their own profile.
+    // A user can only write to their own profile.
     match /users/{userId} {
       allow read: if isSignedIn();
-      allow write: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update, delete: if isOwner(userId);
     }
     
     // Routes can be read by any signed-in user, but only created/updated/deleted by an admin.
