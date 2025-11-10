@@ -12,14 +12,17 @@ import { useFirestore } from '../provider';
 // This hook provides a real-time stream of a single document from Firestore.
 // It uses the onSnapshot listener to keep the data up-to-date.
 // It also provides a loading state, so you can show a spinner while the data is being fetched.
-export function useDoc<T = DocumentData>(path: string) {
+export function useDoc<T = DocumentData>(path: string | null) {
   const db = useFirestore() as Firestore;
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // If we don't have a database instance, we can't fetch the data.
-    if (!db) return;
+    // If we don't have a database instance or path, we can't fetch the data.
+    if (!db || !path) {
+        setLoading(false);
+        return;
+    }
 
     // The onSnapshot listener is called whenever the data in the document changes.
     // We use this to update the state with the new data.

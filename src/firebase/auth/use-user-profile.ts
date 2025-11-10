@@ -7,7 +7,8 @@ import type { UserProfile } from '@/lib/types';
 
 export function useUserProfile() {
   const { user } = useUser();
-  const { data: userProfile, loading } = useDoc<UserProfile>(user ? `users/${user.uid}` : '');
+  // Only try to fetch the document if the user object (and thus user.uid) exists.
+  const { data: userProfile, loading } = useDoc<UserProfile>(user ? `users/${user.uid}` : null);
 
   return { userProfile, loading };
 }
