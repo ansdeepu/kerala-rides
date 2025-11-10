@@ -40,7 +40,20 @@ export function useCollection<T = DocumentData>(path: string, field?: string, va
       snapshot.forEach((doc) => {
         data.push({ id: doc.id, ...doc.data() } as T);
       });
+      // Sort stops by arrival time
+      if (path.includes('routes') && data.length > 0) {
+        data.forEach((route: any) => {
+            if (route.stops && Array.isArray(route.stops)) {
+                route.stops.sort((a: any, b: any) => {
+                    return a.arrivalTime.localeCompare(b.arrivalTime);
+                });
+            }
+        });
+      }
       setData(data);
+      setLoading(false);
+    }, (error) => {
+      console.error("Error fetching collection: ", error);
       setLoading(false);
     });
 
@@ -49,5 +62,5 @@ export function useCollection<T = DocumentData>(path: string, field?: string, va
     return () => unsubscribe();
   }, [db, path, field, value]);
 
-  return { data, loading };
+  return { data, loading, setData };
 }
