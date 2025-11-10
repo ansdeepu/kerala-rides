@@ -31,40 +31,57 @@ export default function MapView({
   const [activeMarkerId, setActiveMarkerId] = React.useState<string | null>(
     null
   );
+  
+  const [mapLoadError, setMapLoadError] = React.useState(false);
 
   const activeMarkerBus = React.useMemo(() => {
     if (!activeMarkerId) return null;
     return buses.find((b) => b.id === activeMarkerId);
   }, [activeMarkerId, buses]);
 
-  if (!API_KEY) {
-    return (
+  const renderErrorCard = (title: string, message: React.ReactNode) => (
       <div className="w-full h-full flex items-center justify-center bg-muted">
         <Card className="max-w-md text-center">
           <CardHeader>
             <CardTitle className="font-headline text-destructive">
-              Google Maps API Key Missing
+              {title}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p>The application cannot connect to Google Maps.</p>
-            <p className="text-sm mt-2 text-muted-foreground">
-              Please ensure your{' '}
-              <code className="p-1 rounded-sm bg-secondary">
-                NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-              </code>{' '}
-              is set correctly.
-            </p>
+            {message}
           </CardContent>
         </Card>
       </div>
+  );
+
+  if (!API_KEY) {
+    return renderErrorCard(
+        "Google Maps API Key Missing",
+        <p className="text-sm mt-2 text-muted-foreground">
+            Please ensure your{' '}
+            <code className="p-1 rounded-sm bg-secondary">
+                NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+            </code>{' '}
+            is set correctly.
+        </p>
     );
+  }
+
+  if (mapLoadError) {
+      return renderErrorCard(
+          "Map Loading Error",
+          <p className="text-sm mt-2 text-muted-foreground">
+              The application could not connect to Google Maps. This may be due to an
+              invalid API key, or because billing is not enabled for your Google
+              Cloud project. Please check the browser console for more details.
+          </p>
+      );
   }
 
   return (
     <div className="w-full h-full">
       <MapErrorBoundary>
-        <APIProvider apiKey={API_KEY}>
+        <APIProvider apiKey={API_KEY} onLoad={() => setMapLoadError(false)}>
           <Map
             defaultCenter={mapCenter}
             center={selectedBus ? selectedBus.currentLocation : mapCenter}
@@ -75,6 +92,7 @@ export default function MapView({
             mapId="kerala-rides-map"
             className="rounded-lg"
             mapTypeControl={false}
+            onError={() => setMapLoadError(true)}
           >
             {buses.map((bus) => (
               <AdvancedMarker

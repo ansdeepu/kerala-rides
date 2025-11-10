@@ -64,6 +64,7 @@ function StopForm({ route, onFormSubmit }: { route: Route; onFormSubmit: () => v
   const db = useFirestore();
   const map = useMap();
   const [editingStop, setEditingStop] = React.useState<Stop | null>(null);
+  const [mapLoadError, setMapLoadError] = React.useState(false);
   
   const [selectedPosition, setSelectedPosition] = React.useState<{ lat: number; lng: number } | null>(null);
   const mapCenter = { lat: 9.2647, lng: 76.7874 }; // Pathanamthitta default
@@ -119,11 +120,17 @@ function StopForm({ route, onFormSubmit }: { route: Route; onFormSubmit: () => v
     if (!db) return;
     const routeRef = doc(db, 'routes', route.id);
     try {
-      await updateDoc(routeRef, {
-        stops: arrayRemove(stopToDelete),
-      });
-      toast({ title: 'Stop Deleted', description: `"${stopToDelete.name}" has been removed from the route.` });
-      onFormSubmit();
+        const routeDoc = await getDoc(routeRef);
+        if (routeDoc.exists()) {
+            const existingStops = routeDoc.data().stops || [];
+            // Find the specific stop to remove. This is more robust than relying on the object itself.
+            const updatedStops = existingStops.filter((s: Stop) => 
+                !(s.name === stopToDelete.name && s.arrivalTime === stopToDelete.arrivalTime && s.location.lat === stopToDelete.location.lat && s.location.lng === stopToDelete.location.lng)
+            );
+            await updateDoc(routeRef, { stops: updatedStops });
+            toast({ title: 'Stop Deleted', description: `"${stopToDelete.name}" has been removed from the route.` });
+            onFormSubmit();
+        }
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -264,24 +271,32 @@ function StopForm({ route, onFormSubmit }: { route: Route; onFormSubmit: () => v
           <div>
             <FormLabel>Stop Location</FormLabel>
             <CardDescription className="mb-2">Click on the map to select a location for the stop.</CardDescription>
-            <div className="w-full h-64 rounded-md overflow-hidden">
-                <Map
-                  defaultCenter={mapCenter}
-                  center={selectedPosition || mapCenter}
-                  defaultZoom={10}
-                  zoom={selectedPosition ? 14 : 10}
-                  gestureHandling={'greedy'}
-                  disableDefaultUI={true}
-                  mapId="route-manager-map"
-                  onClick={handleMapClick}
-                >
-                  {selectedPosition && (
-                    <AdvancedMarker position={selectedPosition}>
-                      <MapPin className="text-red-500 w-8 h-8" />
-                    </AdvancedMarker>
-                  )}
-                </Map>
-            </div>
+            {mapLoadError ? (
+                 <div className="text-destructive p-4 border-l-4 border-destructive bg-destructive/10 rounded-md">
+                    <h4 className="font-bold">Map Loading Error</h4>
+                    <p className="text-sm">The map could not connect to Google Maps. This may be due to an invalid API key or a billing issue.</p>
+                 </div>
+            ) : (
+                <div className="w-full h-64 rounded-md overflow-hidden">
+                    <Map
+                      defaultCenter={mapCenter}
+                      center={selectedPosition || mapCenter}
+                      defaultZoom={10}
+                      zoom={selectedPosition ? 14 : 10}
+                      gestureHandling={'greedy'}
+                      disableDefaultUI={true}
+                      mapId="route-manager-map"
+                      onClick={handleMapClick}
+                      onError={() => setMapLoadError(true)}
+                    >
+                      {selectedPosition && (
+                        <AdvancedMarker position={selectedPosition}>
+                          <MapPin className="text-red-500 w-8 h-8" />
+                        </AdvancedMarker>
+                      )}
+                    </Map>
+                </div>
+            )}
           </div>
 
           <div className="flex gap-4">
