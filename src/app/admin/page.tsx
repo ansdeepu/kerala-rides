@@ -6,9 +6,9 @@ import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { addDoc, collection } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 
-import { useFirestore, useUser } from '@/firebase';
+import { useFirestore, useUser, useCollection } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -26,9 +26,17 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from '@/hooks/use-toast';
 import { ArrowLeft } from 'lucide-react';
 import { RouteManager } from '@/components/route-manager';
+import type { Route } from '@/lib/types';
 
 const routeFormSchema = z.object({
   name: z
@@ -41,11 +49,23 @@ const routeFormSchema = z.object({
 
 type RouteFormValues = z.infer<typeof routeFormSchema>;
 
+const busFormSchema = z.object({
+  number: z
+    .string()
+    .min(5, { message: 'Bus number must be at least 5 characters.' })
+    .regex(/^[A-Z]{2}-\d{1,2}-[A-Z]{1,2}-\d{4}$/i, "Please use format like KL-01-A-1234"),
+  routeId: z.string().min(1, { message: 'Please select a route.' }),
+});
+
+type BusFormValues = z.infer<typeof busFormSchema>;
+
 export default function AdminPage() {
   const { user, loading } = useUser();
   const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter();
   const db = useFirestore();
+  const { data: routes, loading: routesLoading } = useCollection<Route>('routes');
+
 
   useEffect(() => {
     if (!loading) {
@@ -63,28 +83,35 @@ export default function AdminPage() {
   }, [user, loading, router]);
 
 
-  const form = useForm<RouteFormValues>({
+  const routeForm = useForm<RouteFormValues>({
     resolver: zodResolver(routeFormSchema),
     defaultValues: {
       name: '',
     },
   });
 
+  const busForm = useForm<BusFormValues>({
+    resolver: zodResolver(busFormSchema),
+    defaultValues: {
+      number: '',
+      routeId: '',
+    },
+  });
 
-  const onSubmit = async (data: RouteFormValues) => {
+  const onRouteSubmit = async (data: RouteFormValues) => {
     if (!db || !isAdmin) return;
 
     try {
       const routesCollection = collection(db, 'routes');
       await addDoc(routesCollection, {
         name: data.name,
-        stops: [], // Will add stops in a later step
+        stops: [],
       });
       toast({
         title: 'Route Created',
         description: `The route "${data.name}" has been added successfully.`,
       });
-      form.reset();
+      routeForm.reset();
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -93,6 +120,41 @@ export default function AdminPage() {
       });
     }
   };
+
+  const onBusSubmit = async (data: BusFormValues) => {
+    if (!db || !isAdmin) return;
+
+    try {
+        const busesCollection = collection(db, 'buses');
+        const selectedRoute = routes?.find(r => r.id === data.routeId);
+        
+        if (!selectedRoute) {
+            throw new Error("Selected route not found.");
+        }
+
+        await addDoc(busesCollection, {
+            number: data.number.toUpperCase(),
+            routeId: data.routeId,
+            currentLocation: selectedRoute.stops[0]?.location || { lat: 0, lng: 0 },
+            status: 'On Time',
+            nextStopIndex: 1,
+            direction: 'forward',
+            updatedAt: serverTimestamp(),
+        });
+        toast({
+            title: 'Bus Created',
+            description: `Bus ${data.number.toUpperCase()} has been added.`,
+        });
+        busForm.reset();
+    } catch (error: any) {
+        toast({
+            variant: 'destructive',
+            title: 'Error Creating Bus',
+            description: error.message,
+        });
+    }
+  };
+
 
   if (loading || !user) {
     return (
@@ -119,27 +181,90 @@ export default function AdminPage() {
         <Button asChild variant="outline">
           <Link href="/">
             <ArrowLeft className="mr-2" />
-            Back to Map
+            Back to Home
           </Link>
         </Button>
       </header>
 
       <div className="grid gap-8">
+         <Card>
+          <CardHeader>
+            <CardTitle>Create New Bus</CardTitle>
+            <CardDescription>
+              Add a new bus to the system and assign it to a route.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Form {...busForm}>
+              <form
+                onSubmit={busForm.handleSubmit(onBusSubmit)}
+                className="space-y-6"
+              >
+                <FormField
+                  control={busForm.control}
+                  name="number"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Bus Number</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="e.g., KL-01-A-1234"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={busForm.control}
+                  name="routeId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Route</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a route to assign" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {routesLoading ? (
+                            <SelectItem value="loading" disabled>Loading routes...</SelectItem>
+                          ) : (
+                            routes?.map(route => (
+                              <SelectItem key={route.id} value={route.id}>
+                                {route.name}
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button type="submit">Create Bus</Button>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle>Create New Bus Route</CardTitle>
             <CardDescription>
-              Define a new route with a name and time. You can add stops in the manager below.
+              Define a new route. You can add stops in the manager below.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Form {...form}>
+            <Form {...routeForm}>
               <form
-                onSubmit={form.handleSubmit(onSubmit)}
+                onSubmit={routeForm.handleSubmit(onRouteSubmit)}
                 className="space-y-6"
               >
                 <FormField
-                  control={form.control}
+                  control={routeForm.control}
                   name="name"
                   render={({ field }) => (
                     <FormItem>

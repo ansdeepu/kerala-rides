@@ -34,7 +34,7 @@ import { Separator } from "@/components/ui/separator";
 import { KeralaRidesLogo } from "./icons";
 import { NotificationDialog } from "./notification-dialog";
 import { ShareSheet } from "./share-sheet";
-import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "./ui/tooltip";
 import { useUser } from "@/firebase";
 
 interface BusPanelProps {
@@ -80,6 +80,7 @@ export function BusPanel({
   );
 
   return (
+    <TooltipProvider>
     <div className="flex flex-col h-full bg-card">
       <header className="flex items-center justify-between p-4 border-b">
         <div className="flex items-center gap-2">
@@ -170,39 +171,10 @@ export function BusPanel({
             <Separator />
             <div>
               <h4 className="mb-2 text-sm font-medium text-muted-foreground">
-                Upcoming Stops
+                Upcoming Stop
               </h4>
-              <ScrollArea className="h-48">
-                <div className="space-y-2">
-                  {selectedBus.stops?.map((stop, index) => (
-                    <div key={stop.name} className="flex items-center">
-                      <div className="flex flex-col items-center mr-4">
-                        <div
-                          className={cn(
-                            "w-3 h-3 rounded-full border-2",
-                            selectedBus.nextStopIndex > index
-                              ? "bg-primary border-primary"
-                              : "border-muted-foreground"
-                          )}
-                        />
-                        {index < selectedBus.stops.length - 1 && (
-                          <div className="w-px h-6 bg-border" />
-                        )}
-                      </div>
-                      <span
-                        className={cn(
-                          "text-sm",
-                          selectedBus.nextStopIndex > index &&
-                            "text-muted-foreground line-through",
-                          selectedBus.nextStopIndex === index && "font-bold"
-                        )}
-                      >
-                        {stop.name}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </ScrollArea>
+               <p className="font-bold">{selectedBus.nextStopName || 'N/A'}</p>
+               <p className="text-sm text-muted-foreground">ETA: {selectedBus.eta || 'N/A'}</p>
             </div>
           </CardContent>
           <div className="grid grid-cols-2 gap-2 p-4 mt-auto border-t">
@@ -271,11 +243,13 @@ export function BusPanel({
                           >
                             {bus.status}
                           </span>
-                          <Avatar className="w-8 h-8">
-                            <AvatarFallback className="text-xs bg-secondary">
-                              {bus.eta}
-                            </AvatarFallback>
-                          </Avatar>
+                           {bus.eta && (
+                            <Avatar className="w-8 h-8">
+                                <AvatarFallback className="text-xs bg-secondary">
+                                {bus.eta}
+                                </AvatarFallback>
+                            </Avatar>
+                           )}
                         </div>
                       </div>
                     </CardHeader>
@@ -283,12 +257,14 @@ export function BusPanel({
                 ))}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
+              <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-4">
                 <BusIcon className="w-12 h-12 mb-4" />
                 <h3 className="text-lg font-semibold">No Buses Found</h3>
                 <p className="text-sm">There is no active bus data to display.</p>
                 {isAdmin && (
-                  <p className="text-sm mt-2">Admins can add new buses and routes.</p>
+                  <Button size="sm" asChild className="mt-4">
+                    <Link href="/admin">Go to Admin Panel to add a bus</Link>
+                  </Button>
                 )}
               </div>
             )}
@@ -296,5 +272,6 @@ export function BusPanel({
         </div>
       )}
     </div>
+    </TooltipProvider>
   );
 }
