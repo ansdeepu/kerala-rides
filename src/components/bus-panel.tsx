@@ -35,7 +35,7 @@ import { KeralaRidesLogo } from "./icons";
 import { NotificationDialog } from "./notification-dialog";
 import { ShareSheet } from "./share-sheet";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
-import { useUser } from "@/firebase";
+import { useUserProfile } from "@/firebase/auth/use-user-profile";
 
 interface BusPanelProps {
   buses: Bus[];
@@ -55,7 +55,7 @@ export function BusPanel({
   const [searchQuery, setSearchQuery] = React.useState("");
   const [isNotificationOpen, setNotificationOpen] = React.useState(false);
   const [isShareOpen, setShareOpen] = React.useState(false);
-  const { user } = useUser();
+  const { userProfile } = useUserProfile();
   const router = useRouter();
   const auth = getAuth();
 
@@ -64,7 +64,7 @@ export function BusPanel({
     router.push('/login');
   };
 
-  const isAdmin = user?.email === 'ss.deepu@gmail.com';
+  const isAdmin = userProfile?.role === 'admin';
 
   const filteredBuses = buses.filter(
     (bus) =>

@@ -9,6 +9,7 @@ import * as z from 'zod';
 import { addDoc, collection } from 'firebase/firestore';
 
 import { useUser, useFirestore } from '@/firebase';
+import { useUserProfile } from '@/firebase/auth/use-user-profile';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -18,7 +19,6 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Form,
   FormControl,
@@ -40,9 +40,13 @@ const routeFormSchema = z.object({
 type RouteFormValues = z.infer<typeof routeFormSchema>;
 
 export default function AdminPage() {
-  const { user, loading } = useUser();
+  const { user, loading: userLoading } = useUser();
+  const { userProfile, loading: profileLoading } = useUserProfile();
   const router = useRouter();
   const db = useFirestore();
+
+  const loading = userLoading || profileLoading;
+  const isAdmin = userProfile?.role === 'admin';
 
   const form = useForm<RouteFormValues>({
     resolver: zodResolver(routeFormSchema),
@@ -52,7 +56,7 @@ export default function AdminPage() {
   });
 
   useEffect(() => {
-    if (!loading && user?.email !== 'ss.deepu@gmail.com') {
+    if (!loading && !isAdmin) {
       toast({
         variant: 'destructive',
         title: 'Unauthorized',
@@ -60,10 +64,10 @@ export default function AdminPage() {
       });
       router.push('/');
     }
-  }, [user, loading, router]);
+  }, [loading, isAdmin, router]);
 
   const onSubmit = async (data: RouteFormValues) => {
-    if (!db) return;
+    if (!db || !isAdmin) return;
 
     try {
       const routesCollection = collection(db, 'routes');
@@ -85,7 +89,7 @@ export default function AdminPage() {
     }
   };
 
-  if (loading || user?.email !== 'ss.deepu@gmail.com') {
+  if (loading || !isAdmin) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         Loading...
