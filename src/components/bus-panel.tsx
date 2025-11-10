@@ -12,6 +12,7 @@ import {
   PanelLeftOpen,
   Search,
   Share2,
+  Shield,
 } from "lucide-react";
 import { getAuth, signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
@@ -63,6 +64,8 @@ export function BusPanel({
     router.push('/login');
   };
 
+  const isAdmin = user?.email === 'ss.deepu@gmail.com';
+
   const filteredBuses = buses.filter(
     (bus) =>
       (bus.number && bus.number.toLowerCase().includes(searchQuery.toLowerCase())) ||
@@ -87,6 +90,20 @@ export function BusPanel({
               <p>Logout</p>
             </TooltipContent>
           </Tooltip>
+          {isAdmin && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" asChild>
+                  <Link href="/admin">
+                    <Shield />
+                  </Link>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Admin Panel</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
           <Tooltip>
             <TooltipTrigger asChild>
               <Button variant="ghost" size="icon" asChild>
@@ -186,7 +203,10 @@ export function BusPanel({
               <Bell className="w-4 h-4 mr-2" />
               Notify Me
             </Button>
-            <Button variant="outline" onClick={() => setShareOpen(true)}>
+            <Button variant="outline" onClick={() => {
+                const url = `${window.location.origin}/?bus=${selectedBus.id}`;
+                setShareOpen(true)
+            }}>
               <Share2 className="w-4 h-4 mr-2" />
               Share Status
             </Button>
@@ -260,7 +280,7 @@ export function BusPanel({
                 <BusIcon className="w-12 h-12 mb-4" />
                 <h3 className="text-lg font-semibold">No Buses Found</h3>
                 <p className="text-sm">There is no active bus data to display.</p>
-                {user?.customClaims?.role === 'admin' && (
+                {isAdmin && (
                   <p className="text-sm mt-2">Admins can add new buses and routes.</p>
                 )}
               </div>
