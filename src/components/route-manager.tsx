@@ -49,12 +49,37 @@ interface Route {
 
 const stopSchema = z.object({
   name: z.string().min(3, 'Stop name is required.'),
-  arrivalTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Please enter a valid 24-hour time (e.g., 14:30)."),
+  arrivalTime: z.string().regex(/^(0?[1-9]|1[0-2]):[0-5][0-9] (AM|PM)$/i, "Please enter a valid 12-hour time (e.g., 02:30 PM)."),
   lat: z.coerce.number().min(-90, 'Lat must be > -90').max(90, 'Lat must be < 90'),
   lng: z.coerce.number().min(-180, 'Lng must be > -180').max(180, 'Lng must be < 180'),
 });
 
 type StopFormValues = z.infer<typeof stopSchema>;
+
+// Function to convert 24h format from time picker to 12h AM/PM format
+const formatTo12Hour = (time24: string): string => {
+    if (!time24) return '';
+    const [hours, minutes] = time24.split(':');
+    const h = parseInt(hours, 10);
+    const suffix = h >= 12 ? 'PM' : 'AM';
+    const hour12 = ((h + 11) % 12 + 1);
+    return `${hour12.toString().padStart(2, '0')}:${minutes} ${suffix}`;
+};
+
+// Function to convert 12h AM/PM format to 24h format for time picker
+const formatTo24Hour = (time12: string): string => {
+    if (!time12) return '';
+    const [time, modifier] = time12.split(' ');
+    let [hours, minutes] = time.split(':');
+    if (hours === '12') {
+        hours = '00';
+    }
+    if (modifier.toUpperCase() === 'PM') {
+        hours = (parseInt(hours, 10) + 12).toString();
+    }
+    return `${hours.padStart(2, '0')}:${minutes}`;
+};
+
 
 function StopForm({ route, onFormSubmit }: { route: Route; onFormSubmit: () => void }) {
   const db = useFirestore();
@@ -121,23 +146,30 @@ function StopForm({ route, onFormSubmit }: { route: Route; onFormSubmit: () => v
     };
 
     try {
+      const routeDoc = await getDoc(routeRef);
+      if (!routeDoc.exists()) throw new Error("Route not found");
+      const existingStops = routeDoc.data().stops || [];
+      let updatedStops: Stop[];
+
       if (editingStop) {
-        const routeDoc = await getDoc(routeRef);
-        if (routeDoc.exists()) {
-          const existingStops = routeDoc.data().stops || [];
-          const updatedStops = existingStops.map((s: Stop) =>
-            s.name === editingStop.name && s.arrivalTime === editingStop.arrivalTime ? newStopData : s
-          );
-          
-          await updateDoc(routeRef, { stops: updatedStops });
-          toast({ title: 'Stop Updated!', description: `"${values.name}" has been updated.` });
-        }
+        const originalStopTime = editingStop.arrivalTime;
+        updatedStops = existingStops.map((s: Stop) =>
+          s.name === editingStop.name && s.arrivalTime === originalStopTime ? newStopData : s
+        );
+        toast({ title: 'Stop Updated!', description: `"${values.name}" has been updated.` });
       } else {
-        await updateDoc(routeRef, {
-            stops: [...(route.stops || []), newStopData],
-        });
+        updatedStops = [...existingStops, newStopData];
         toast({ title: 'Stop Added!', description: `"${values.name}" has been added to the route.` });
       }
+      
+      // Sort stops by arrival time before updating
+      updatedStops.sort((a, b) => {
+        const timeA = formatTo24Hour(a.arrivalTime);
+        const timeB = formatTo24Hour(b.arrivalTime);
+        return timeA.localeCompare(timeB);
+      });
+
+      await updateDoc(routeRef, { stops: updatedStops });
       cancelEdit();
       onFormSubmit();
     } catch (error: any) {
@@ -228,13 +260,17 @@ function StopForm({ route, onFormSubmit }: { route: Route; onFormSubmit: () => v
             control={form.control}
             name="arrivalTime"
             render={({ field }) => (
-              <FormItem>
-                <FormLabel>Arrival Time (24h format)</FormLabel>
-                <FormControl>
-                  <Input placeholder="e.g., 14:30" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
+                <FormItem>
+                  <FormLabel>Arrival Time (12h format)</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="time" 
+                      value={formatTo24Hour(field.value)}
+                      onChange={(e) => field.onChange(formatTo12Hour(e.target.value))}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
             )}
           />
           
