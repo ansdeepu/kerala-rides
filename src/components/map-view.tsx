@@ -9,7 +9,7 @@ import {
   InfoWindow,
 } from "@vis.gl/react-google-maps";
 import { Bus as BusIcon, Route } from "lucide-react";
-import type { Bus } from "@/lib/data";
+import type { Bus } from "@/app/page";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 
@@ -40,7 +40,7 @@ export default function MapView({ buses, selectedBus, onBusSelect }: MapViewProp
             </CardHeader>
             <CardContent>
                 <p>Please add your Google Maps API key to view the map.</p>
-                <p className="mt-2 text-sm text-muted-foreground">The app is missing the <code className="bg-secondary p-1 rounded-sm">NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code> environment variable.</p>
+                <p className="text-sm mt-2 text-muted-foreground">The app is missing the <code className="p-1 rounded-sm bg-secondary">NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code> environment variable.</p>
             </CardContent>
         </Card>
       </div>
@@ -88,7 +88,7 @@ export default function MapView({ buses, selectedBus, onBusSelect }: MapViewProp
                 <h3 className="font-bold font-headline">{activeMarkerBus.routeName}</h3>
                 <p className="text-sm">No: {activeMarkerBus.number}</p>
                 <p className="text-sm">Status: {activeMarkerBus.status}</p>
-                <Button size="sm" className="mt-2 w-full" onClick={() => onBusSelect(activeMarkerBus.id)}>View Details</Button>
+                <Button size="sm" className="w-full mt-2" onClick={() => onBusSelect(activeMarkerBus.id)}>View Details</Button>
               </div>
             </InfoWindow>
           )}

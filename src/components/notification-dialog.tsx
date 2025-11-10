@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { toast } from "@/hooks/use-toast";
-import type { Bus } from "@/lib/data";
+import type { Bus } from "@/app/page";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,

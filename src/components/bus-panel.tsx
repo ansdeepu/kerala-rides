@@ -13,7 +13,7 @@ import {
   Share2,
 } from "lucide-react";
 
-import type { Bus } from "@/lib/data";
+import type { Bus } from "@/app/page";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -194,44 +194,52 @@ export function BusPanel({
             </div>
           </div>
           <ScrollArea className="flex-1">
-            <div className="p-4 space-y-3">
-              {filteredBuses.map((bus) => (
-                <Card
-                  key={bus.id}
-                  className="transition-all cursor-pointer hover:shadow-md hover:border-primary"
-                  onClick={() => onBusSelect(bus.id)}
-                >
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="text-base font-bold font-headline">
-                          {bus.routeName}
-                        </CardTitle>
-                        <CardDescription>
-                          Bus No: {bus.number}
-                        </CardDescription>
+             {filteredBuses.length > 0 ? (
+              <div className="p-4 space-y-3">
+                {filteredBuses.map((bus) => (
+                  <Card
+                    key={bus.id}
+                    className="transition-all cursor-pointer hover:shadow-md hover:border-primary"
+                    onClick={() => onBusSelect(bus.id)}
+                  >
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <CardTitle className="text-base font-bold font-headline">
+                            {bus.routeName}
+                          </CardTitle>
+                          <CardDescription>
+                            Bus No: {bus.number}
+                          </CardDescription>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={cn(
+                              "text-xs font-semibold",
+                              bus.status === "On Time" && "text-green-600",
+                              bus.status === "Delayed" && "text-orange-500"
+                            )}
+                          >
+                            {bus.status}
+                          </span>
+                          <Avatar className="w-8 h-8">
+                            <AvatarFallback className="text-xs bg-secondary">
+                              {bus.eta}
+                            </AvatarFallback>
+                          </Avatar>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={cn(
-                            "text-xs font-semibold",
-                            bus.status === "On Time" && "text-green-600",
-                            bus.status === "Delayed" && "text-orange-500"
-                          )}
-                        >
-                          {bus.status}
-                        </span>
-                        <Avatar className="w-8 h-8">
-                          <AvatarFallback className="text-xs bg-secondary">
-                            {bus.eta}
-                          </AvatarFallback>
-                        </Avatar>
-                      </div>
-                    </div>
-                  </CardHeader>
-                </Card>
-              ))}
-            </div>
+                    </CardHeader>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
+                <BusIcon className="w-12 h-12 mb-4" />
+                <h3 className="text-lg font-semibold">No Buses Found</h3>
+                <p className="text-sm">There is no active bus data to display.</p>
+              </div>
+            )}
           </ScrollArea>
         </div>
       )}
