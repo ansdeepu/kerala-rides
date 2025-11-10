@@ -3,13 +3,13 @@
 
 // Get the configuration from environment variables
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY_HERE",
-  authDomain: "YOUR_AUTH_DOMAIN_HERE",
-  projectId: "YOUR_PROJECT_ID_HERE",
-  storageBucket: "YOUR_STORAGE_BUCKET_HERE",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID_HERE",
-  appId: "YOUR_APP_ID_HERE",
-};
+    apiKey: "AIzaSyCb3mTmtcOKSgmvtI7IMeGY-bkGbQ9P5Xc",
+      authDomain: "kerala-rides.firebaseapp.com",
+        projectId: "kerala-rides",
+          storageBucket: "kerala-rides.firebasestorage.app",
+            messagingSenderId: "387500806511",
+              appId: "1:387500806511:web:29e665bef15c0e0b4b989a"
+              };
 
 // A function to check if the config is valid.
 // It checks if all the required environment variables are set.
