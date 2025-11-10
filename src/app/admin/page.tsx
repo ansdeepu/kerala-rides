@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -8,8 +8,7 @@ import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { addDoc, collection } from 'firebase/firestore';
 
-import { useFirestore } from '@/firebase';
-import { useUserProfile } from '@/firebase/auth/use-user-profile';
+import { useFirestore, useUser } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -43,12 +42,35 @@ const routeFormSchema = z.object({
 type RouteFormValues = z.infer<typeof routeFormSchema>;
 
 export default function AdminPage() {
-  const { userProfile, loading: profileLoading } = useUserProfile();
+  const { user, loading } = useUser();
+  const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter();
   const db = useFirestore();
 
-  const loading = profileLoading;
-  const isAdmin = userProfile?.role === 'admin';
+  useEffect(() => {
+    if (user) {
+      user.getIdTokenResult().then((idTokenResult) => {
+        const isAdminClaim = !!idTokenResult.claims.admin;
+        setIsAdmin(isAdminClaim);
+        if (!loading && !isAdminClaim) {
+           toast({
+            variant: 'destructive',
+            title: 'Unauthorized',
+            description: 'You do not have permission to access this page.',
+          });
+          router.push('/');
+        }
+      });
+    } else if (!loading) {
+        toast({
+            variant: 'destructive',
+            title: 'Unauthorized',
+            description: 'You must be logged in to view this page.',
+        });
+        router.push('/');
+    }
+  }, [user, loading, router]);
+
 
   const form = useForm<RouteFormValues>({
     resolver: zodResolver(routeFormSchema),
@@ -57,16 +79,6 @@ export default function AdminPage() {
     },
   });
 
-  useEffect(() => {
-    if (!loading && !isAdmin) {
-      toast({
-        variant: 'destructive',
-        title: 'Unauthorized',
-        description: 'You do not have permission to access this page.',
-      });
-      router.push('/');
-    }
-  }, [loading, isAdmin, router]);
 
   const onSubmit = async (data: RouteFormValues) => {
     if (!db || !isAdmin) return;
@@ -91,7 +103,7 @@ export default function AdminPage() {
     }
   };
 
-  if (loading || !userProfile) {
+  if (loading || !user) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         Loading...
@@ -102,7 +114,7 @@ export default function AdminPage() {
   if (!isAdmin) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <p>You are not authorized to view this page.</p>
+        <p>Redirecting...</p>
       </div>
     );
   }

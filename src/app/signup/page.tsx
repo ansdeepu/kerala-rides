@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createUserWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithPopup, User } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -18,19 +18,19 @@ import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
 import { KeralaRidesLogo } from '@/components/icons';
 import { Chrome } from 'lucide-react';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useAuth, useFirestore } from '@/firebase';
 
 export default function SignupPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const [role, setRole] = useState<'user' | 'admin'>('user');
   const router = useRouter();
   const auth = useAuth();
   const db = useFirestore();
 
-  const createUserProfile = async (user: User, roleToSet: 'user' | 'admin', nameToSet?: string | null) => {
+  // This function now only creates a user document, without role information.
+  // The role will be managed via custom claims by an administrator.
+  const createUserProfile = async (user: User, nameToSet?: string | null) => {
     if (!db) return;
     const userRef = doc(db, 'users', user.uid);
     const userDoc = await getDoc(userRef);
@@ -41,8 +41,7 @@ export default function SignupPage() {
         uid: user.uid,
         email: user.email,
         displayName: nameToSet || user.displayName,
-        role: roleToSet,
-        createdAt: new Date(),
+        createdAt: serverTimestamp(),
       });
     }
   };
@@ -55,12 +54,11 @@ export default function SignupPage() {
       const user = userCredential.user;
       await updateProfile(user, { displayName: name });
       
-      // Save user profile to Firestore
-      await createUserProfile(user, role, name);
+      await createUserProfile(user, name);
 
-      toast({ title: 'Signup Successful', description: "Welcome to Kerala Rides!" });
+      toast({ title: 'Signup Successful', description: "Welcome to Kerala Rides! Your account has been created." });
       router.push('/');
-    } catch (error: any) {
+    } catch (error: any)      {
       toast({
         variant: 'destructive',
         title: 'Signup Failed',
@@ -76,8 +74,7 @@ export default function SignupPage() {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
 
-      // Save user profile to Firestore, default to 'user' role
-      await createUserProfile(user, 'user');
+      await createUserProfile(user);
 
       toast({ title: 'Login Successful', description: "Welcome!" });
       router.push('/');
@@ -133,19 +130,6 @@ export default function SignupPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
-            </div>
-            <div className="space-y-2">
-              <Label>Role</Label>
-              <RadioGroup defaultValue="user" onValueChange={(value) => setRole(value as 'user' | 'admin')} className="flex gap-4">
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="user" id="user" />
-                  <Label htmlFor="user">User</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="admin" id="admin" />
-                  <Label htmlFor="admin">Admin</Label>
-                </div>
-              </RadioGroup>
             </div>
             <Button type="submit" className="w-full">
               Create Account

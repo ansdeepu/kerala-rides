@@ -12,13 +12,10 @@ service cloud.firestore {
       return request.auth.uid == userId;
     }
     
-    function getRole() {
-        // Safe-guard against non-existent user doc
-        return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
-    }
-    
+    // This function checks for a custom claim 'admin' on the user's auth token.
+    // Custom claims are more secure for role-based access control.
     function isAdmin() {
-        return isSignedIn() && getRole() == 'admin';
+        return isSignedIn() && request.auth.token.admin == true;
     }
 
     // User profiles are readable by any signed-in user.
@@ -26,7 +23,7 @@ service cloud.firestore {
     // A user can only update or delete their own profile.
     match /users/{userId} {
       allow read: if isSignedIn();
-      allow create: if request.auth.uid == userId;
+      allow create: if isOwner(userId);
       allow update, delete: if isOwner(userId);
     }
     
