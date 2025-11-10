@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { getAuth, createUserWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import { getFirestore, doc, setDoc } from 'firebase/firestore';
+import { createUserWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -19,6 +19,7 @@ import { toast } from '@/hooks/use-toast';
 import { KeralaRidesLogo } from '@/components/icons';
 import { Chrome } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { useAuth, useFirestore } from '@/firebase';
 
 export default function SignupPage() {
   const [email, setEmail] = useState('');
@@ -26,11 +27,12 @@ export default function SignupPage() {
   const [name, setName] = useState('');
   const [role, setRole] = useState<'user' | 'admin'>('user');
   const router = useRouter();
-  const auth = getAuth();
-  const db = getFirestore();
+  const auth = useAuth();
+  const db = useFirestore();
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!auth || !db) return;
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
@@ -57,6 +59,7 @@ export default function SignupPage() {
   };
   
   const handleGoogleSignIn = async () => {
+    if (!auth || !db) return;
     const provider = new GoogleAuthProvider();
     try {
       const result = await signInWithPopup(auth, provider);
