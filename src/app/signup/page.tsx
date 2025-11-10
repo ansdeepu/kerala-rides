@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { createUserWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { createUserWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithPopup, User } from 'firebase/auth';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -30,6 +30,23 @@ export default function SignupPage() {
   const auth = useAuth();
   const db = useFirestore();
 
+  const createUserProfile = async (user: User, roleToSet: 'user' | 'admin', nameToSet?: string | null) => {
+    if (!db) return;
+    const userRef = doc(db, 'users', user.uid);
+    const userDoc = await getDoc(userRef);
+
+    // Only create profile if it doesn't exist
+    if (!userDoc.exists()) {
+      await setDoc(userRef, {
+        uid: user.uid,
+        email: user.email,
+        displayName: nameToSet || user.displayName,
+        role: roleToSet,
+        createdAt: new Date(),
+      });
+    }
+  };
+
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!auth || !db) return;
@@ -39,13 +56,7 @@ export default function SignupPage() {
       await updateProfile(user, { displayName: name });
       
       // Save user profile to Firestore
-      await setDoc(doc(db, 'users', user.uid), {
-        uid: user.uid,
-        email: user.email,
-        displayName: name,
-        role: role,
-        createdAt: new Date(),
-      });
+      await createUserProfile(user, role, name);
 
       toast({ title: 'Signup Successful', description: "Welcome to Kerala Rides!" });
       router.push('/');
@@ -65,14 +76,8 @@ export default function SignupPage() {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
 
-      // Save user profile to Firestore
-      await setDoc(doc(db, 'users', user.uid), {
-        uid: user.uid,
-        email: user.email,
-        displayName: user.displayName,
-        role: 'user', // Default to user for Google Sign-In
-        createdAt: new Date(),
-      }, { merge: true }); // Merge to not overwrite if exists
+      // Save user profile to Firestore, default to 'user' role
+      await createUserProfile(user, 'user');
 
       toast({ title: 'Login Successful', description: "Welcome!" });
       router.push('/');

@@ -13,19 +13,20 @@ service cloud.firestore {
     }
     
     function getRole() {
+        // Safe-guard against non-existent user doc
         return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
     }
     
     function isAdmin() {
-        return getRole() == 'admin';
+        return isSignedIn() && getRole() == 'admin';
     }
 
     // User profiles are readable by any signed-in user.
-    // Any signed-in user can create their own profile.
-    // A user can only write to their own profile.
+    // Any signed-in user can create their own profile, which is crucial for the signup flow.
+    // A user can only update or delete their own profile.
     match /users/{userId} {
       allow read: if isSignedIn();
-      allow create: if isOwner(userId) || request.resource.data.uid == request.auth.uid;
+      allow create: if request.auth.uid == userId;
       allow update, delete: if isOwner(userId);
     }
     
@@ -41,7 +42,7 @@ service cloud.firestore {
     match /buses/{busId} {
         allow read: if isSignedIn();
         allow create, delete: if isAdmin();
-        allow update: if isAdmin() || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['currentLocation', 'updatedAt']));
+        allow update: if isAdmin() || (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['currentLocation', 'updatedAt']));
     }
   }
 }
