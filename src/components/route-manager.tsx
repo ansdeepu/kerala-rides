@@ -35,6 +35,7 @@ import { toast } from '@/hooks/use-toast';
 import { Trash, MapPin, Edit, X } from 'lucide-react';
 import { APIProvider, Map, AdvancedMarker, useMap } from '@vis.gl/react-google-maps';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
+import { MapErrorBoundary } from './map-error-boundary';
 
 const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
 
@@ -144,8 +145,6 @@ function StopForm({ route, onFormSubmit }: { route: Route; onFormSubmit: () => v
 
     try {
       if (editingStop) {
-        // To edit an item in an array, we remove the old one and add the new one.
-        // This isn't a single atomic operation but is good enough for this admin panel.
         const routeDoc = await getDoc(routeRef);
         if (routeDoc.exists()) {
           const existingStops = routeDoc.data().stops || [];
@@ -163,7 +162,7 @@ function StopForm({ route, onFormSubmit }: { route: Route; onFormSubmit: () => v
         toast({ title: 'Stop Added!', description: `"${values.name}" has been added to the route.` });
       }
       cancelEdit();
-      onFormSubmit(); // Callback to refresh parent state if needed
+      onFormSubmit();
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -338,7 +337,6 @@ export function RouteManager() {
     }
   };
 
-  // Callback to refresh route data after a stop is modified
   const refreshRouteData = async (routeId: string) => {
     if (!db || !routes) return;
     const routeRef = doc(db, 'routes', routeId);
@@ -363,8 +361,7 @@ export function RouteManager() {
         ) : !API_KEY ? (
           <div className="text-destructive p-4 border-l-4 border-destructive bg-destructive/10 rounded-md">
             <h4 className="font-bold">Google Maps API Key Error</h4>
-            <p className="text-sm">The Google Maps API key is missing or invalid. This could be due to a missing <code className="p-1 rounded-sm bg-secondary">.env.local</code> file, or a billing issue with your Google Cloud account.</p>
-            <p className="text-sm mt-2">Please ensure your API key is correct and that billing is enabled for your project in the Google Cloud Console.</p>
+            <p className="text-sm">The Google Maps API key is missing. Please set the <code className="p-1 rounded-sm bg-secondary">NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code> environment variable.</p>
           </div>
         ) : (
           <Accordion type="single" collapsible className="w-full">
@@ -403,9 +400,11 @@ export function RouteManager() {
                     </AlertDialog>
                 </div>
                 <AccordionContent className="space-y-4">
-                   <APIProvider apiKey={API_KEY}>
-                      <StopForm route={route} onFormSubmit={() => refreshRouteData(route.id)} />
-                   </APIProvider>
+                  <MapErrorBoundary>
+                    <APIProvider apiKey={API_KEY}>
+                        <StopForm route={route} onFormSubmit={() => refreshRouteData(route.id)} />
+                    </APIProvider>
+                  </MapErrorBoundary>
                 </AccordionContent>
               </AccordionItem>
             ))}
