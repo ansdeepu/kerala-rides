@@ -43,6 +43,8 @@ interface Route {
 const stopSchema = z.object({
   name: z.string().min(3, 'Stop name is required.'),
   arrivalTime: z.string().min(1, 'Arrival time is required.'),
+  lat: z.coerce.number().min(-90).max(90),
+  lng: z.coerce.number().min(-180).max(180),
 });
 
 type StopFormValues = z.infer<typeof stopSchema>;
@@ -56,6 +58,8 @@ export function RouteManager() {
     defaultValues: {
       name: '',
       arrivalTime: '',
+      lat: 0,
+      lng: 0,
     }
   });
 
@@ -67,12 +71,10 @@ export function RouteManager() {
         stops: arrayUnion({
           name: values.name,
           arrivalTime: values.arrivalTime,
-          // Using placeholder location for now
           location: {
-            lat: 9.15,
-            lng: 76.73,
+            lat: values.lat,
+            lng: values.lng,
           },
-          placeholder: true
         }),
       });
       toast({ title: 'Stop added successfully!' });
@@ -138,7 +140,7 @@ export function RouteManager() {
                       <ul className="list-disc pl-5 space-y-1 text-sm">
                         {route.stops.map((stop) => (
                           <li key={stop.name}>
-                            {stop.name} (Arrives: {stop.arrivalTime})
+                            {stop.name} (Arrives: {stop.arrivalTime}) - Lat: {stop.location.lat}, Lng: {stop.location.lng}
                           </li>
                         ))}
                       </ul>
@@ -181,6 +183,34 @@ export function RouteManager() {
                             </FormItem>
                           )}
                         />
+                         <div className="flex gap-4">
+                          <FormField
+                            control={form.control}
+                            name="lat"
+                            render={({ field }) => (
+                              <FormItem className="flex-1">
+                                <FormLabel>Latitude</FormLabel>
+                                <FormControl>
+                                  <Input type="number" placeholder="e.g., 9.1578" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="lng"
+                            render={({ field }) => (
+                              <FormItem className="flex-1">
+                                <FormLabel>Longitude</FormLabel>
+                                <FormControl>
+                                  <Input type="number" placeholder="e.g., 76.7355" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
                       <Button type="submit">Add Stop</Button>
                     </form>
                   </Form>

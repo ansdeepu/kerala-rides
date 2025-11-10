@@ -29,7 +29,7 @@
             "description": "The timestamp when the user profile was created."
         }
       },
-      "required": ["uid", "email", "role", "createdAt"]
+      "required": ["uid", "email", "createdAt"]
     },
     "Route": {
         "title": "Bus Route",
@@ -54,10 +54,6 @@
                                 "lng": { "type": "number" }
                             },
                             "required": ["lat", "lng"]
-                        },
-                        "placeholder": {
-                            "type": "boolean",
-                            "description": "True if the location is a placeholder."
                         }
                     },
                     "required": ["name", "location", "arrivalTime"]
