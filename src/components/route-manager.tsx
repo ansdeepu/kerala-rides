@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useCollection } from '@/firebase';
-import { doc, updateDoc, arrayUnion, arrayRemove, getDoc } from 'firebase/firestore';
+import { doc, updateDoc, arrayUnion, arrayRemove, getDoc, deleteDoc } from 'firebase/firestore';
 import * as z from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -146,13 +146,16 @@ function StopForm({ route, onFormSubmit }: { route: Route; onFormSubmit: () => v
       if (editingStop) {
         // To edit an item in an array, we remove the old one and add the new one.
         // This isn't a single atomic operation but is good enough for this admin panel.
-        await updateDoc(routeRef, {
-          stops: arrayRemove(editingStop)
-        });
-        await updateDoc(routeRef, {
-          stops: arrayUnion(newStopData)
-        });
-        toast({ title: 'Stop Updated!', description: `"${values.name}" has been updated.` });
+        const routeDoc = await getDoc(routeRef);
+        if (routeDoc.exists()) {
+          const existingStops = routeDoc.data().stops || [];
+          const updatedStops = existingStops.map((s: Stop) =>
+            s.name === editingStop.name && s.arrivalTime === editingStop.arrivalTime ? newStopData : s
+          );
+          
+          await updateDoc(routeRef, { stops: updatedStops });
+          toast({ title: 'Stop Updated!', description: `"${values.name}" has been updated.` });
+        }
       } else {
         await updateDoc(routeRef, {
           stops: arrayUnion(newStopData),
@@ -176,8 +179,8 @@ function StopForm({ route, onFormSubmit }: { route: Route; onFormSubmit: () => v
         <h4 className="font-semibold mb-2">Existing Stops:</h4>
         {route.stops.length > 0 ? (
           <ul className="list-decimal pl-5 space-y-2 text-sm">
-            {route.stops.map((stop) => (
-              <li key={stop.name} className="flex justify-between items-center">
+            {route.stops.map((stop, index) => (
+              <li key={`${stop.name}-${index}`} className="flex justify-between items-center">
                 <div>
                   <strong>{stop.name}</strong> (Arrives: {stop.arrivalTime})
                   <br />
@@ -322,7 +325,7 @@ export function RouteManager() {
   const db = useFirestore();
 
   const handleDeleteRoute = async (routeId: string) => {
-    if (!db || !confirm('Are you sure you want to delete this entire route and all its stops? This action cannot be undone.')) return;
+    if (!db) return;
     try {
       await deleteDoc(doc(db, 'routes', routeId));
       toast({ title: 'Route deleted successfully' });
@@ -358,16 +361,17 @@ export function RouteManager() {
         {loading ? (
           <p>Loading routes...</p>
         ) : !API_KEY ? (
-          <div className="text-red-600 p-4 border-l-4 border-red-600 bg-red-100">
-            <h4 className="font-bold">Google Maps API Key Missing</h4>
-            <p>You need to provide a Google Maps API Key in your environment variables to use the map features.</p>
+          <div className="text-destructive p-4 border-l-4 border-destructive bg-destructive/10 rounded-md">
+            <h4 className="font-bold">Google Maps API Key Error</h4>
+            <p className="text-sm">The Google Maps API key is missing or invalid. This could be due to a missing <code className="p-1 rounded-sm bg-secondary">.env.local</code> file, or a billing issue with your Google Cloud account.</p>
+            <p className="text-sm mt-2">Please ensure your API key is correct and that billing is enabled for your project in the Google Cloud Console.</p>
           </div>
         ) : (
           <Accordion type="single" collapsible className="w-full">
             {routes?.map((route) => (
               <AccordionItem key={route.id} value={route.id}>
                 <div className="flex items-center justify-between w-full">
-                  <AccordionTrigger className="flex-grow text-left hover:no-underline">
+                  <AccordionTrigger className="flex-grow text-left hover:no-underline px-4">
                     <span>{route.name}</span>
                   </AccordionTrigger>
                   <AlertDialog>
