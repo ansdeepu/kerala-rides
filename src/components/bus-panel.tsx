@@ -7,11 +7,14 @@ import {
   Bell,
   Bus as BusIcon,
   HelpCircle,
+  LogOut,
   PanelLeftClose,
   PanelLeftOpen,
   Search,
   Share2,
 } from "lucide-react";
+import { getAuth, signOut } from "firebase/auth";
+import { useRouter } from "next/navigation";
 
 import type { Bus } from "@/lib/bus-data";
 import { cn } from "@/lib/utils";
@@ -31,6 +34,7 @@ import { KeralaRidesLogo } from "./icons";
 import { NotificationDialog } from "./notification-dialog";
 import { ShareSheet } from "./share-sheet";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
+import { useUser } from "@/firebase";
 
 interface BusPanelProps {
   buses: Bus[];
@@ -50,11 +54,19 @@ export function BusPanel({
   const [searchQuery, setSearchQuery] = React.useState("");
   const [isNotificationOpen, setNotificationOpen] = React.useState(false);
   const [isShareOpen, setShareOpen] = React.useState(false);
+  const { user } = useUser();
+  const router = useRouter();
+  const auth = getAuth();
+
+  const handleLogout = async () => {
+    await signOut(auth);
+    router.push('/login');
+  };
 
   const filteredBuses = buses.filter(
     (bus) =>
-      bus.number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      bus.routeName.toLowerCase().includes(searchQuery.toLowerCase())
+      (bus.number && bus.number.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (bus.routeName && bus.routeName.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   return (
@@ -65,6 +77,16 @@ export function BusPanel({
           <h1 className="text-xl font-bold font-headline">Kerala Rides</h1>
         </div>
         <div className="flex items-center gap-1">
+           <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" onClick={handleLogout}>
+                <LogOut />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Logout</p>
+            </TooltipContent>
+          </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button variant="ghost" size="icon" asChild>
@@ -128,7 +150,7 @@ export function BusPanel({
               </h4>
               <ScrollArea className="h-48">
                 <div className="space-y-2">
-                  {selectedBus.stops.map((stop, index) => (
+                  {selectedBus.stops?.map((stop, index) => (
                     <div key={stop.name} className="flex items-center">
                       <div className="flex flex-col items-center mr-4">
                         <div
@@ -238,6 +260,9 @@ export function BusPanel({
                 <BusIcon className="w-12 h-12 mb-4" />
                 <h3 className="text-lg font-semibold">No Buses Found</h3>
                 <p className="text-sm">There is no active bus data to display.</p>
+                {user?.customClaims?.role === 'admin' && (
+                  <p className="text-sm mt-2">Admins can add new buses and routes.</p>
+                )}
               </div>
             )}
           </ScrollArea>

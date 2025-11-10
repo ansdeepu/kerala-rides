@@ -1,0 +1,116 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Represents a user's profile information.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "The user's unique ID from Firebase Auth."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "The user's email address."
+        },
+        "displayName": {
+          "type": "string",
+          "description": "The user's display name."
+        },
+        "role": {
+          "type": "string",
+          "enum": ["user", "admin"],
+          "description": "The user's role in the application."
+        },
+        "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The timestamp when the user profile was created."
+        }
+      },
+      "required": ["uid", "email", "role", "createdAt"]
+    },
+    "Route": {
+        "title": "Bus Route",
+        "description": "Defines a bus route with a name and a series of stops.",
+        "type": "object",
+        "properties": {
+            "name": {
+                "type": "string",
+                "description": "The name of the route (e.g., 'Pathanamthitta - Kollam')."
+            },
+            "stops": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "name": { "type": "string" },
+                        "location": {
+                            "type": "object",
+                            "properties": {
+                                "lat": { "type": "number" },
+                                "lng": { "type": "number" }
+                            },
+                            "required": ["lat", "lng"]
+                        }
+                    },
+                    "required": ["name", "location"]
+                }
+            }
+        },
+        "required": ["name", "stops"]
+    },
+    "Bus": {
+        "title": "Bus",
+        "description": "Represents a single bus.",
+        "type": "object",
+        "properties": {
+            "number": {
+                "type": "string",
+                "description": "The registration number of the bus."
+            },
+            "routeId": {
+                "type": "string",
+                "description": "The ID of the route this bus is assigned to."
+            },
+            "currentLocation": {
+                "type": "object",
+                "properties": {
+                    "lat": { "type": "number" },
+                    "lng": { "type": "number" }
+                },
+                "required": ["lat", "lng"]
+            },
+            "status": {
+                "type": "string",
+                "enum": ["On Time", "Delayed", "Early"],
+                "description": "The current status of the bus."
+            },
+            "updatedAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "The timestamp of the last location update."
+            }
+        },
+        "required": ["number", "routeId", "currentLocation", "updatedAt"]
+    }
+  },
+  "auth": {
+    "providers": ["email", "google.com"]
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Stores public information about a user, accessible by others."
+    },
+    "/routes/{routeId}": {
+        "schema": { "$ref": "#/entities/Route" },
+        "description": "Stores all available bus routes."
+    },
+    "/buses/{busId}": {
+        "schema": { "$ref": "#/entities/Bus" },
+        "description": "Stores information and real-time data for each bus."
+    }
+  }
+}
