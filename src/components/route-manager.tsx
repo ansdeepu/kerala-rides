@@ -32,7 +32,7 @@ import {
 } from '@/components/ui/form';
 import { useFirestore } from '@/firebase';
 import { toast } from '@/hooks/use-toast';
-import { Trash, Edit, X, MapPin } from 'lucide-react';
+import { Trash, Edit, X } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
 
 interface Stop {
@@ -66,11 +66,20 @@ const formatTo12Hour = (time24: string): string => {
     return `${hour12.toString().padStart(2, '0')}:${minutes} ${suffix}`;
 };
 
-// Function to convert 12h AM/PM format to 24h format for time picker
-const formatTo24Hour = (time12: string): string => {
-    if (!time12) return '';
-    const [time, modifier] = time12.split(' ');
-    let [hours, minutes] = time.split(':');
+// Function to convert 12h AM/PM format OR 24h format to a consistent 24h string for sorting
+const convertTo24HourForSort = (time: string): string => {
+    if (!time) return '';
+
+    // Check if it's already in 24-hour format (e.g., "14:30")
+    if (/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(time)) {
+        return time;
+    }
+    
+    // Otherwise, assume 12-hour format (e.g., "02:30 PM")
+    const [timePart, modifier] = time.split(' ');
+    if (!timePart || !modifier) return ''; // Invalid format
+
+    let [hours, minutes] = timePart.split(':');
     if (hours === '12') {
         hours = '00';
     }
@@ -172,8 +181,8 @@ function StopForm({ route, onFormSubmit }: { route: Route; onFormSubmit: () => v
       
       // Sort stops by arrival time before updating
       updatedStops.sort((a, b) => {
-        const timeA = formatTo24Hour(a.arrivalTime);
-        const timeB = formatTo24Hour(b.arrivalTime);
+        const timeA = convertTo24HourForSort(a.arrivalTime);
+        const timeB = convertTo24HourForSort(b.arrivalTime);
         return timeA.localeCompare(timeB);
       });
 
@@ -273,7 +282,7 @@ function StopForm({ route, onFormSubmit }: { route: Route; onFormSubmit: () => v
                   <FormControl>
                     <Input 
                       type="time" 
-                      value={formatTo24Hour(field.value)}
+                      value={convertTo24HourForSort(field.value)}
                       onChange={(e) => field.onChange(formatTo12Hour(e.target.value))}
                     />
                   </FormControl>
