@@ -1,10 +1,12 @@
 "use client";
 
 import * as React from "react";
+import Link from 'next/link';
 import {
   ArrowLeft,
   Bell,
   Bus as BusIcon,
+  HelpCircle,
   PanelLeftClose,
   PanelLeftOpen,
   Search,
@@ -28,6 +30,7 @@ import { Separator } from "@/components/ui/separator";
 import { KeralaRidesLogo } from "./icons";
 import { NotificationDialog } from "./notification-dialog";
 import { ShareSheet } from "./share-sheet";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
 interface BusPanelProps {
   buses: Bus[];
@@ -61,9 +64,23 @@ export function BusPanel({
           <KeralaRidesLogo className="w-8 h-8 text-primary" />
           <h1 className="text-xl font-bold font-headline">Kerala Rides</h1>
         </div>
-        <Button variant="ghost" size="icon" onClick={onSidebarToggle} className="md:hidden">
-          {isSidebarOpen ? <PanelLeftClose /> : <PanelLeftOpen />}
-        </Button>
+        <div className="flex items-center gap-1">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" asChild>
+                <Link href="/help">
+                  <HelpCircle />
+                </Link>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Help</p>
+            </TooltipContent>
+          </Tooltip>
+          <Button variant="ghost" size="icon" onClick={onSidebarToggle} className="md:hidden">
+            {isSidebarOpen ? <PanelLeftClose /> : <PanelLeftOpen />}
+          </Button>
+        </div>
       </header>
 
       {selectedBus ? (
