@@ -69,10 +69,10 @@ export default function HelpPage() {
             </CardHeader>
             <CardContent>
               <p>
-                Currently, all bus routes, stops, and locations are generated in the file <code className="bg-secondary p-1 rounded-sm">src/lib/bus-data.ts</code>. You cannot add or change bus data through the user interface.
+                Users with an **admin** role can add and manage bus routes and stops. The bus data is stored in the project's Firestore database.
               </p>
               <p className="mt-2 text-sm text-muted-foreground">
-                To add a new bus or route, a developer would need to modify this data file directly. A future version could include an admin panel for managing this data through a form.
+                If you are an admin, you can access the <Link href="/admin" className="underline">Admin Panel</Link> to create new routes and add stops with their coordinates. Bus locations themselves are still part of a simulation based on these routes.
               </p>
             </CardContent>
           </Card>
