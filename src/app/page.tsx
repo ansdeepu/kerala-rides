@@ -25,6 +25,23 @@ function StopTimeline({ stops, nextStopIndex, direction, eta, historicStops, sel
   const routeNotStarted = isToday && eta === "Route has not started";
   const displayStops = historicStops || stops;
 
+  // Helper to convert "hh:mm AM/PM" to a comparable number.
+  const timeToMinutes = (timeStr: string): number | null => {
+    const match = timeStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+    if (!match) return null;
+    let [hours, minutes] = [parseInt(match[1]), parseInt(match[2])];
+    const modifier = match[3].toUpperCase();
+
+    if (modifier === 'PM' && hours < 12) {
+      hours += 12;
+    }
+    if (modifier === 'AM' && hours === 12) {
+      hours = 0;
+    }
+    return hours * 60 + minutes;
+  };
+
+
   return (
     <ScrollArea className="h-full">
         <div className="p-4 md:p-8">
@@ -49,27 +66,26 @@ function StopTimeline({ stops, nextStopIndex, direction, eta, historicStops, sel
                     let statusText = '';
                     let statusClass = '';
                     if (stop.actualArrivalTime && stop.arrivalTime) {
-                      try {
-                        const actualTime = new Date(`1970-01-01T${stop.actualArrivalTime.replace(/(AM|PM)/, '').trim()}`);
-                        const scheduledTime = new Date(`1970-01-01T${stop.arrivalTime.replace(/(AM|PM)/, '').trim()}`);
-                        const timeDifference = actualTime.getTime() - scheduledTime.getTime();
-                        const diffMinutes = Math.round(timeDifference / 60000);
+                        const actualMinutes = timeToMinutes(stop.actualArrivalTime);
+                        const scheduledMinutes = timeToMinutes(stop.arrivalTime);
                         
-                        if (diffMinutes > 5) {
-                            statusText = `Delayed by ${diffMinutes} min`;
-                            statusClass = 'text-destructive';
-                        } else if (diffMinutes < -5) {
-                             statusText = `Early by ${-diffMinutes} min`;
-                             statusClass = 'text-blue-600';
+                        if (actualMinutes !== null && scheduledMinutes !== null) {
+                            const diffMinutes = actualMinutes - scheduledMinutes;
+                            
+                            if (diffMinutes > 5) {
+                                statusText = `Delayed by ${diffMinutes} min`;
+                                statusClass = 'text-destructive';
+                            } else if (diffMinutes < -5) {
+                                 statusText = `Early by ${-diffMinutes} min`;
+                                 statusClass = 'text-blue-600';
+                            } else {
+                                statusText = `On Time`;
+                                statusClass = 'text-green-600';
+                            }
                         } else {
-                            statusText = `On Time`;
-                            statusClass = 'text-green-600';
+                            statusText = "Invalid time";
+                            statusClass = 'text-muted-foreground';
                         }
-                      } catch(e) {
-                        // In case of invalid time format
-                        statusText = "Invalid time format";
-                        statusClass = 'text-muted-foreground';
-                      }
                     }
 
                     return (
