@@ -32,7 +32,7 @@ import {
 } from '@/components/ui/form';
 import { useFirestore } from '@/firebase';
 import { toast } from '@/hooks/use-toast';
-import { Trash, Edit, X, Copy } from 'lucide-react';
+import { Trash, Edit, X, Copy, Check } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
 
 interface Stop {
@@ -110,8 +110,7 @@ function StopForm({ route, onFormSubmit }: { route: Route; onFormSubmit: () => v
     setEditingStop(stop);
     form.reset({
       name: stop.name,
-      // Convert to 24h format for the time input
-      arrivalTime: stop.arrivalTime, 
+      arrivalTime: stop.arrivalTime, // The field itself expects 12hr format
       lat: stop.location.lat,
       lng: stop.location.lng,
     });
@@ -281,6 +280,7 @@ function StopForm({ route, onFormSubmit }: { route: Route; onFormSubmit: () => v
                 <FormItem>
                   <FormLabel>Arrival Time</FormLabel>
                   <FormControl>
+                    {/* The input needs 24h format, the form hook provides 12h format. Convert on change */}
                     <Input 
                       type="time" 
                       value={convertTo24Hour(field.value)}
@@ -324,6 +324,52 @@ function StopForm({ route, onFormSubmit }: { route: Route; onFormSubmit: () => v
         </form>
       </Form>
     </div>
+  );
+}
+
+function RouteTitle({ route, onUpdate }: { route: Route, onUpdate: () => void }) {
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [name, setName] = React.useState(route.name);
+  const db = useFirestore();
+
+  const handleUpdate = async () => {
+    if (!db || name === route.name) {
+      setIsEditing(false);
+      return;
+    }
+    const routeRef = doc(db, 'routes', route.id);
+    try {
+      await updateDoc(routeRef, { name: name });
+      toast({ title: 'Route name updated successfully!' });
+      onUpdate();
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'Error updating name', description: error.message });
+      setName(route.name); // Revert on error
+    } finally {
+      setIsEditing(false);
+    }
+  };
+
+  if (isEditing) {
+    return (
+      <div className="flex-1 flex items-center gap-2">
+        <Input 
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="h-9"
+          autoFocus
+          onKeyDown={(e) => e.key === 'Enter' && handleUpdate()}
+          onBlur={handleUpdate}
+        />
+        <Button size="icon" className="h-9 w-9" onClick={handleUpdate}><Check /></Button>
+      </div>
+    );
+  }
+
+  return (
+    <AccordionTrigger className="flex-1 hover:no-underline px-4 py-2 text-left">
+      <span>{route.name}</span>
+    </AccordionTrigger>
   );
 }
 
@@ -389,6 +435,15 @@ export function RouteManager() {
     }
   }
 
+  const forceRefreshAllRoutes = async () => {
+     if (!db) return;
+     const routesCollection = collection(db, 'routes');
+     const snapshot = await getDoc(routesCollection as any);
+     const newRoutes = snapshot.docs.map((doc: any) => ({id: doc.id, ...doc.data()} as Route));
+     setRoutes(newRoutes);
+  };
+
+
   return (
     <Card>
       <CardHeader>
@@ -405,9 +460,25 @@ export function RouteManager() {
             {routes?.map((route) => (
               <AccordionItem key={route.id} value={route.id}>
                 <div className="flex items-center w-full">
-                  <AccordionTrigger className="flex-1 hover:no-underline px-4 py-2 text-left">
-                    <span>{route.name}</span>
-                  </AccordionTrigger>
+                  <RouteTitle route={route} onUpdate={() => forceRefreshAllRoutes()} />
+                  <Button
+                      variant="ghost"
+                      size="icon"
+                      className="mr-2"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // This seems to be a React state issue where we need to manually make the component aware of the change
+                        const accordionContent = (e.currentTarget as HTMLElement).closest('.flex')?.nextElementSibling;
+                        if(accordionContent) accordionContent.setAttribute('data-state', 'open');
+                         const input = (e.currentTarget as HTMLElement).closest('.flex')?.querySelector('input');
+                         if(input) input.focus();
+                         const routeTitle = (e.currentTarget as HTMLElement).closest('.flex')?.querySelector('button');
+                          if(routeTitle) routeTitle.click();
+                      }}
+                      title="Edit Route Name"
+                  >
+                      <Edit className="h-4 w-4 text-muted-foreground" />
+                  </Button>
                   <Button
                     variant="ghost"
                     size="icon"
