@@ -71,7 +71,7 @@ export function BusPanel({
 
   React.useEffect(() => {
     if (drivingBusId && location && db) {
-      const busRef = doc(db, 'buses', drivingBusId);
+      const busRef = doc(db, 'routes', drivingBusId);
       updateDoc(busRef, {
         currentLocation: {
           lat: location.latitude,
@@ -101,14 +101,14 @@ export function BusPanel({
       setDrivingBusId(null);
        toast({
         title: "Tracking Stopped",
-        description: `You are no longer providing location for bus ${selectedBus?.number}.`,
+        description: `You are no longer providing location for route ${selectedBus?.name}.`,
       });
     } else if (selectedBus) {
       startTracking();
       setDrivingBusId(selectedBus.id);
       toast({
         title: "Tracking Started!",
-        description: `You are now providing the live location for bus ${selectedBus.number}.`,
+        description: `You are now providing the live location for route ${selectedBus.name}.`,
       });
     }
   };
@@ -129,8 +129,7 @@ export function BusPanel({
 
   const filteredBuses = buses.filter(
     (bus) =>
-      (bus.number && bus.number.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (bus.routeName && bus.routeName.toLowerCase().includes(searchQuery.toLowerCase()))
+      bus.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -205,9 +204,9 @@ export function BusPanel({
             <CardHeader className="p-0">
               <CardTitle className="flex items-center gap-3 font-headline">
                 <BusIcon className="w-6 h-6 text-primary" />
-                {selectedBus.routeName}
+                {selectedBus.name}
               </CardTitle>
-              <CardDescription>Bus No: {selectedBus.number}</CardDescription>
+              <CardDescription>Status: {selectedBus.status}</CardDescription>
             </CardHeader>
           </div>
           <ScrollArea className="flex-1">
@@ -282,7 +281,7 @@ export function BusPanel({
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
-                placeholder="Search by route or bus number"
+                placeholder="Search by route name"
                 className="pl-10"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -302,10 +301,10 @@ export function BusPanel({
                       <div className="flex items-start justify-between">
                         <div>
                           <CardTitle className="text-base font-bold font-headline">
-                            {bus.routeName}
+                            {bus.name}
                           </CardTitle>
                           <CardDescription>
-                            Bus No: {bus.number}
+                            Status: {bus.status}
                           </CardDescription>
                         </div>
                         <div className="flex items-center gap-2">
@@ -329,11 +328,11 @@ export function BusPanel({
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-4">
                 <BusIcon className="w-12 h-12 mb-4" />
-                <h3 className="text-lg font-semibold">No Buses Found</h3>
-                <p className="text-sm">There is no active bus data to display.</p>
+                <h3 className="text-lg font-semibold">No Routes Found</h3>
+                <p className="text-sm">There are no active routes to display.</p>
                 {isAdmin && (
                   <Button size="sm" asChild className="mt-4">
-                    <Link href="/admin">Go to Admin Panel to add a bus</Link>
+                    <Link href="/admin">Go to Admin Panel to add a route</Link>
                   </Button>
                 )}
               </div>

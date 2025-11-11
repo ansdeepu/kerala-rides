@@ -32,7 +32,7 @@ export function ShareSheet({ isOpen, onOpenChange, bus }: ShareSheetProps) {
 
   if (!bus) return null;
 
-  const shareText = `Track KSRTC bus ${bus.number} (${bus.routeName}) with me on Kerala Rides! It's currently ${bus.status}. ETA for ${bus.nextStopName}: ${bus.eta}.`;
+  const shareText = `Track the bus on route ${bus.name} with me on Kerala Rides! It's currently ${bus.status}. ETA for ${bus.nextStopName}: ${bus.eta}.`;
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -71,7 +71,7 @@ export function ShareSheet({ isOpen, onOpenChange, bus }: ShareSheetProps) {
         <SheetHeader>
           <SheetTitle className="font-headline">Share Bus Status</SheetTitle>
           <SheetDescription>
-            Share the real-time location of bus {bus.number}.
+            Share the real-time location of the bus on route {bus.name}.
           </SheetDescription>
         </SheetHeader>
         <div className="py-4 space-y-4">

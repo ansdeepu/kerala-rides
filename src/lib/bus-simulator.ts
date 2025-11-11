@@ -1,5 +1,5 @@
 'use client';
-import type { Bus, Route, Stop } from './types';
+import type { Bus, Stop } from './types';
 
 // Helper to convert "hh:mm AM/PM" to a Date object for today
 function timeToDate(timeStr: string): Date | null {
@@ -26,41 +26,38 @@ function timeToDate(timeStr: string): Date | null {
 
 // This function simulates the movement of buses along their routes.
 // It will not move buses that are being actively "driven" by a user.
-export function simulateBusMovement(currentBuses: Bus[], routes: Route[], drivingBusId: string | null): Bus[] {
-  if (currentBuses.length === 0 || routes.length === 0) {
+export function simulateBusMovement(currentBuses: Bus[], drivingBusId: string | null): Bus[] {
+  if (currentBuses.length === 0) {
     return currentBuses;
   }
 
   const now = new Date();
 
   return currentBuses.map(bus => {
-    const route = routes.find(r => r.id === bus.routeId);
-    const enrichedBus = { ...bus, routeName: route?.name || 'Unknown Route', stops: route?.stops || [] };
-
     // If a user is actively driving this bus, just enrich it with route data and return.
     // The live location is being updated directly in Firestore and will be reflected via the useCollection hook.
     if (bus.id === drivingBusId) {
-        const nextStop = route?.stops[bus.nextStopIndex];
+        const nextStop = bus.stops[bus.nextStopIndex];
          return {
-            ...enrichedBus,
+            ...bus,
             nextStopName: nextStop?.name || 'N/A',
             eta: nextStop ? '1 min' : 'N/A', // A simple placeholder ETA for live driving
             status: 'On Time'
         };
     }
     
-    if (!route || route.stops.length < 2) {
+    if (!bus.stops || bus.stops.length < 2) {
       return {
-        ...enrichedBus,
+        ...bus,
         status: 'On Time',
         eta: 'N/A',
-        currentLocation: route?.stops[0]?.location || { lat: 0, lng: 0 },
+        currentLocation: bus.stops[0]?.location || { lat: 0, lng: 0 },
         nextStopIndex: 1,
         nextStopName: 'N/A',
       };
     }
     
-    const { stops } = route;
+    const { stops } = bus;
     
     // Filter out stops with invalid times before processing
     const validStopTimes = stops
@@ -69,12 +66,12 @@ export function simulateBusMovement(currentBuses: Bus[], routes: Route[], drivin
 
     if (validStopTimes.length < 2) {
         // Not enough valid stops to create a route segment
-        enrichedBus.currentLocation = stops[0]?.location || { lat: 0, lng: 0 };
-        enrichedBus.nextStopIndex = 1;
-        enrichedBus.eta = "Schedule data incomplete";
-        enrichedBus.status = 'Not Started';
-        enrichedBus.nextStopName = stops[0]?.name || 'N/A';
-        return enrichedBus;
+        bus.currentLocation = stops[0]?.location || { lat: 0, lng: 0 };
+        bus.nextStopIndex = 1;
+        bus.eta = "Schedule data incomplete";
+        bus.status = 'Not Started';
+        bus.nextStopName = stops[0]?.name || 'N/A';
+        return bus;
     }
 
     const firstStopTime = validStopTimes[0].time;
@@ -84,18 +81,18 @@ export function simulateBusMovement(currentBuses: Bus[], routes: Route[], drivin
 
     if (now < firstStopTime) {
         // Before the route starts, park at the first stop
-        enrichedBus.currentLocation = validStopTimes[0].stop.location;
-        enrichedBus.nextStopIndex = 0; // It's at the first stop
-        enrichedBus.status = "Not Started";
-        enrichedBus.eta = "Route has not started";
-        enrichedBus.nextStopName = 'N/A';
+        bus.currentLocation = validStopTimes[0].stop.location;
+        bus.nextStopIndex = 0; // It's at the first stop
+        bus.status = "Not Started";
+        bus.eta = "Route has not started";
+        bus.nextStopName = 'N/A';
     } else if (now > lastStopTime) {
         // After the route ends, park at the last stop
-        enrichedBus.currentLocation = validStopTimes[validStopTimes.length - 1].stop.location;
-        enrichedBus.nextStopIndex = stops.length; // No next stop
-        enrichedBus.status = "Finished";
-        enrichedBus.eta = "Route has finished";
-        enrichedBus.nextStopName = 'End of Route';
+        bus.currentLocation = validStopTimes[validStopTimes.length - 1].stop.location;
+        bus.nextStopIndex = stops.length; // No next stop
+        bus.status = "Finished";
+        bus.eta = "Route has finished";
+        bus.nextStopName = 'End of Route';
     } else {
         // Find the current segment of the route
         for (let i = 0; i < validStopTimes.length - 1; i++) {
@@ -110,18 +107,18 @@ export function simulateBusMovement(currentBuses: Bus[], routes: Route[], drivin
                 const timeElapsed = now.getTime() - fromTime.getTime();
                 const progress = timeInSegment > 0 ? timeElapsed / timeInSegment : 0;
 
-                enrichedBus.currentLocation = {
+                bus.currentLocation = {
                     lat: fromStop.location.lat + (toStop.location.lat - fromStop.location.lat) * progress,
                     lng: fromStop.location.lng + (toStop.location.lng - fromStop.location.lng) * progress,
                 };
                 
                 // Find the original index from the main stops array
                 const originalStopIndex = stops.findIndex(s => s.name === toStop.name && s.arrivalTime === toStop.arrivalTime);
-                enrichedBus.nextStopIndex = originalStopIndex !== -1 ? originalStopIndex : i + 1;
+                bus.nextStopIndex = originalStopIndex !== -1 ? originalStopIndex : i + 1;
                 
                 const etaMillis = toTime.getTime() - now.getTime();
                 const etaMinutes = Math.round(etaMillis / 60000);
-                enrichedBus.eta = `${Math.max(0, etaMinutes)} min`;
+                bus.eta = `${Math.max(0, etaMinutes)} min`;
 
                 segmentFound = true;
                 break;
@@ -133,20 +130,20 @@ export function simulateBusMovement(currentBuses: Bus[], routes: Route[], drivin
            if (lastDepartedIndex < 0) lastDepartedIndex = validStopTimes.length - 1;
 
            const lastDepartedStop = validStopTimes[lastDepartedIndex].stop;
-           enrichedBus.currentLocation = lastDepartedStop.location;
+           bus.currentLocation = lastDepartedStop.location;
 
            const originalStopIndex = stops.findIndex(s => s.name === lastDepartedStop.name && s.arrivalTime === lastDepartedStop.arrivalTime);
-           enrichedBus.nextStopIndex = (originalStopIndex !== -1 ? originalStopIndex : lastDepartedIndex) + 1;
-           enrichedBus.eta = "At Stop";
+           bus.nextStopIndex = (originalStopIndex !== -1 ? originalStopIndex : lastDepartedIndex) + 1;
+           bus.eta = "At Stop";
         }
         
-        enrichedBus.nextStopName = stops[enrichedBus.nextStopIndex]?.name || 'End of Route';
+        bus.nextStopName = stops[bus.nextStopIndex]?.name || 'End of Route';
         const randomStatus = Math.random();
-        if (randomStatus < 0.1) enrichedBus.status = 'Delayed';
-        else if (randomStatus > 0.9) enrichedBus.status = 'Early';
-        else enrichedBus.status = 'On Time';
+        if (randomStatus < 0.1) bus.status = 'Delayed';
+        else if (randomStatus > 0.9) bus.status = 'Early';
+        else bus.status = 'On Time';
     }
     
-    return enrichedBus;
+    return bus;
   });
 }

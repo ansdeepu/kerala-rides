@@ -64,7 +64,7 @@ export function NotificationDialog({
 
     const phoneNumber = data.phone.replace(/[^0-9]/g, "");
     const message = encodeURIComponent(
-      `🔔 *Kerala Rides Notification* 🔔\n\nI'd like to get a notification for KSRTC bus *${bus.number}* (${bus.routeName}) arriving at *${data.stop}* stop.`
+      `🔔 *Kerala Rides Notification* 🔔\n\nI'd like to get a notification for the bus on route *${bus.name}* arriving at *${data.stop}* stop.`
     );
     
     // Note: This is a simulation. In a real app, this would trigger a backend service.

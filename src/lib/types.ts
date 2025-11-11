@@ -15,23 +15,16 @@ export interface Stop {
   };
 }
 
-export interface Route {
+// A "Bus" is now just a Route with live tracking data.
+export interface Bus {
   id: string;
   name: string;
   stops: Stop[];
-}
-
-export interface Bus {
-  id: string;
-  number: string;
-  routeId: string;
-  routeName?: string; // Will be added dynamically
-  currentLocation: { lat: number; lng: number };
+  currentLocation: { lat: number; lng: number } | null;
   status: 'On Time' | 'Delayed' | 'Early' | 'Not Started' | 'Finished';
   eta?: string;
-  stops?: Stop[];
   nextStopIndex: number;
   nextStopName?: string;
   direction: 'forward' | 'backward';
-  updatedAt: any;
+  updatedAt?: any;
 }

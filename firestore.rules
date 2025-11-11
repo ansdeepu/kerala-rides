@@ -29,20 +29,14 @@ service cloud.firestore {
       allow update, delete: if isOwner(userId);
     }
     
-    // Routes can be read by any signed-in user, but only created/updated/deleted by an admin.
+    // Routes can be read by any signed-in user.
+    // Admins can create/delete routes.
+    // Admins can update any field on a route.
+    // Any signed-in user can update the currentLocation and updatedAt fields if they are "driving".
     match /routes/{routeId} {
         allow read: if isSignedIn();
-        allow write: if isAdmin();
-    }
-    
-    // Buses can be read by any signed-in user.
-    // Admins can create/delete buses.
-    // Admins can update any field.
-    // Any signed-in user can update the currentLocation and updatedAt fields.
-    match /buses/{busId} {
-        allow read: if isSignedIn();
         allow create, delete: if isAdmin();
-        allow update: if isAdmin() || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['currentLocation', 'updatedAt']));
+        allow update: if isAdmin() || (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['currentLocation', 'updatedAt']));
     }
   }
 }

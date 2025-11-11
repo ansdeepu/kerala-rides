@@ -7,7 +7,6 @@ import type { Bus, Stop } from '@/lib/types';
 import { useUser, useCollection } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { simulateBusMovement } from '@/lib/bus-simulator';
-import type { Route } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { MapPin, Bus as BusIcon, Circle, CheckCircle, Clock } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -68,8 +67,7 @@ export default function Home() {
   const { user, loading } = useUser();
   const router = useRouter();
   
-  const { data: routes, loading: routesLoading } = useCollection<Route>('routes');
-  const { data: initialBuses, loading: busesLoading } = useCollection<Bus>('buses');
+  const { data: routes, loading: routesLoading } = useCollection<Bus>('routes');
   
   const [buses, setBuses] = React.useState<Bus[]>([]);
   const [selectedBusId, setSelectedBusId] = React.useState<string | null>(null);
@@ -81,12 +79,11 @@ export default function Home() {
     [buses, selectedBusId]
   );
   
-  // Set initial buses from Firestore
   React.useEffect(() => {
-    if (initialBuses) {
-      setBuses(initialBuses);
+    if (routes) {
+      setBuses(routes);
     }
-  }, [initialBuses]);
+  }, [routes]);
 
   React.useEffect(() => {
     if (!loading && !user) {
@@ -96,15 +93,15 @@ export default function Home() {
 
   // Simulate bus movement
   React.useEffect(() => {
-    if (!routes || routes.length === 0 || !initialBuses || initialBuses.length === 0) return;
+    if (!routes || routes.length === 0) return;
 
     const interval = setInterval(() => {
-      setBuses((currentBuses) => simulateBusMovement(currentBuses, routes, drivingBusId));
+      setBuses((currentBuses) => simulateBusMovement(currentBuses, drivingBusId));
     }, 5000); // Move buses every 5 seconds
     return () => clearInterval(interval);
-  }, [routes, initialBuses, drivingBusId]);
+  }, [routes, drivingBusId]);
 
-  if (loading || routesLoading || busesLoading) {
+  if (loading || routesLoading) {
     return <div className="flex h-screen items-center justify-center">Loading...</div>;
   }
   
@@ -130,9 +127,9 @@ export default function Home() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-3">
                   <BusIcon />
-                  Route Details: {selectedBus.routeName}
+                  Route Details: {selectedBus.name}
                 </CardTitle>
-                <CardDescription>Bus No: {selectedBus.number}</CardDescription>
+                <CardDescription>Status: {selectedBus.status}</CardDescription>
               </CardHeader>
               <CardContent className="h-[calc(100%-80px)]">
                  <StopTimeline 
