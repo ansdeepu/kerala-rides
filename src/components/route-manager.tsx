@@ -110,6 +110,8 @@ function StopForm({ route, onFormSubmit }: { route: Route; onFormSubmit: () => v
     setEditingStop(stop);
     form.reset({
       name: stop.name,
+      // The form input for time expects "HH:mm" (24-hour), but our data is "hh:mm AM/PM".
+      // We convert it here before setting the form value.
       arrivalTime: stop.arrivalTime, 
       lat: stop.location.lat,
       lng: stop.location.lng,
@@ -443,19 +445,21 @@ export function RouteManager() {
                               if (e.key === 'Escape') handleCancelEditing();
                             }}
                           />
-                           <Button size="icon" className="h-9 w-9" onClick={handleUpdateRouteName}><Check /></Button>
-                           <Button size="icon" variant="ghost" className="h-9 w-9" onClick={handleCancelEditing}><X /></Button>
                         </div>
                      ) : (
                        <span>{route.name}</span>
                      )}
                   </AccordionTrigger>
-                   {editingRouteId !== route.id && (
-                     <>
+                   {editingRouteId === route.id ? (
+                      <div className="flex items-center gap-1 pr-2" onClick={e => e.stopPropagation()}>
+                        <Button size="icon" className="h-9 w-9" onClick={handleUpdateRouteName}><Check /></Button>
+                        <Button size="icon" variant="ghost" className="h-9 w-9" onClick={handleCancelEditing}><X /></Button>
+                      </div>
+                   ) : (
+                     <div className="flex items-center gap-1 pr-2" onClick={e => e.stopPropagation()}>
                       <Button
                           variant="ghost"
                           size="icon"
-                          className="mr-2"
                           onClick={(e) => handleStartEditing(route, e)}
                           title="Edit Route Name"
                       >
@@ -464,7 +468,6 @@ export function RouteManager() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="mr-2"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleCreateReturnTrip(route);
@@ -478,7 +481,7 @@ export function RouteManager() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="mr-4 text-destructive hover:text-destructive hover:bg-destructive/10"
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
                               onClick={e => e.stopPropagation()}
                             >
                               <Trash className="h-4 w-4" />
@@ -501,7 +504,7 @@ export function RouteManager() {
                             </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>
-                     </>
+                     </div>
                    )}
                 </div>
                 <AccordionContent>
