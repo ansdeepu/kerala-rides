@@ -48,6 +48,29 @@ interface BusPanelProps {
   isSidebarOpen: boolean;
 }
 
+// Helper to convert "hh:mm AM/PM" to a Date object for today
+const parseTime = (name: string): Date | null => {
+    const timeMatch = name.match(/@\s*(\d{1,2}:\d{2}\s*(?:AM|PM))/i);
+    if (!timeMatch || !timeMatch[1]) return null;
+
+    const timeStr = timeMatch[1];
+    const now = new Date();
+    const [time, modifier] = timeStr.split(' ');
+    if (!time || !modifier) return null;
+
+    let [hours, minutes] = time.split(':').map(Number);
+    if (isNaN(hours) || isNaN(minutes)) return null;
+
+    if (modifier.toUpperCase() === 'PM' && hours < 12) {
+        hours += 12;
+    }
+    if (modifier.toUpperCase() === 'AM' && hours === 12) {
+        hours = 0;
+    }
+    
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes, 0);
+};
+
 export function BusPanel({
   buses,
   selectedBus,
@@ -127,10 +150,45 @@ export function BusPanel({
     router.push('/login');
   };
 
-  const filteredBuses = buses.filter(
-    (bus) =>
+  const filteredAndSortedBuses = React.useMemo(() => {
+    const filtered = buses.filter((bus) =>
       bus.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+    );
+
+    const now = new Date().getTime();
+
+    const upcoming: Bus[] = [];
+    const pastOrActive: Bus[] = [];
+
+    for (const bus of filtered) {
+        const busTime = parseTime(bus.name);
+        if (busTime && busTime.getTime() > now) {
+            upcoming.push(bus);
+        } else {
+            pastOrActive.push(bus);
+        }
+    }
+    
+    // Sort upcoming buses by their time
+    upcoming.sort((a, b) => {
+        const timeA = parseTime(a.name);
+        const timeB = parseTime(b.name);
+        if (!timeA || !timeB) return 0;
+        return timeA.getTime() - timeB.getTime();
+    });
+
+    // Sort past buses by their time
+    pastOrActive.sort((a, b) => {
+        const timeA = parseTime(a.name);
+        const timeB = parseTime(b.name);
+        if (!timeA || !timeB) return 0;
+        return timeA.getTime() - timeB.getTime();
+    });
+
+
+    return [...upcoming, ...pastOrActive];
+  }, [buses, searchQuery]);
+
 
   return (
     <TooltipProvider>
@@ -202,7 +260,7 @@ export function BusPanel({
               Back to List
             </Button>
             <CardHeader className="p-0">
-              <CardTitle className="flex items-center gap-3 font-headline">
+              <CardTitle className="flex items-center gap-3 font-headline text-base">
                 <BusIcon className="w-6 h-6 text-primary" />
                 {selectedBus.name}
               </CardTitle>
@@ -289,9 +347,9 @@ export function BusPanel({
             </div>
           </div>
           <ScrollArea className="flex-1">
-             {filteredBuses.length > 0 ? (
+             {filteredAndSortedBuses.length > 0 ? (
               <div className="p-4 space-y-3">
-                {filteredBuses.map((bus) => (
+                {filteredAndSortedBuses.map((bus) => (
                   <Card
                     key={bus.id}
                     className="transition-all cursor-pointer hover:shadow-md hover:border-primary"
