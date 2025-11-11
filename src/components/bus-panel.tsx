@@ -300,7 +300,7 @@ export function BusPanel({
                     <CardHeader>
                       <div className="flex items-start justify-between">
                         <div>
-                          <CardTitle className="text-base font-bold font-headline">
+                          <CardTitle className="text-sm font-bold font-headline">
                             {bus.name}
                           </CardTitle>
                           <CardDescription>
