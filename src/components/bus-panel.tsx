@@ -159,34 +159,35 @@ export function BusPanel({
 
     const upcoming: Bus[] = [];
     const pastOrActive: Bus[] = [];
+    const finished: Bus[] = [];
 
     for (const bus of filtered) {
-        const busTime = parseTime(bus.name);
-        if (busTime && busTime.getTime() > now) {
-            upcoming.push(bus);
+        if (bus.status === 'Finished') {
+            finished.push(bus);
         } else {
-            pastOrActive.push(bus);
+            const busTime = parseTime(bus.name);
+            if (busTime && busTime.getTime() > now) {
+                upcoming.push(bus);
+            } else {
+                pastOrActive.push(bus);
+            }
         }
     }
     
     // Sort upcoming buses by their time
-    upcoming.sort((a, b) => {
+    const timeSorter = (a: Bus, b: Bus) => {
         const timeA = parseTime(a.name);
         const timeB = parseTime(b.name);
         if (!timeA || !timeB) return 0;
         return timeA.getTime() - timeB.getTime();
-    });
+    };
 
-    // Sort past buses by their time
-    pastOrActive.sort((a, b) => {
-        const timeA = parseTime(a.name);
-        const timeB = parseTime(b.name);
-        if (!timeA || !timeB) return 0;
-        return timeA.getTime() - timeB.getTime();
-    });
+    upcoming.sort(timeSorter);
+    pastOrActive.sort(timeSorter);
+    finished.sort(timeSorter);
 
 
-    return [...upcoming, ...pastOrActive];
+    return [...upcoming, ...pastOrActive, ...finished];
   }, [buses, searchQuery]);
 
 
