@@ -6,7 +6,6 @@ import type { Bus, Trip } from '@/lib/types';
 import { useUser, useDoc } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { simulateBusMovement } from '@/lib/bus-simulator';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Bus as BusIcon, CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Calendar } from '@/components/ui/calendar';
