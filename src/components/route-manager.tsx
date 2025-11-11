@@ -110,7 +110,7 @@ function StopForm({ route, onFormSubmit }: { route: Route; onFormSubmit: () => v
     setEditingStop(stop);
     form.reset({
       name: stop.name,
-      arrivalTime: stop.arrivalTime, // The field itself expects 12hr format
+      arrivalTime: stop.arrivalTime, 
       lat: stop.location.lat,
       lng: stop.location.lng,
     });
@@ -327,74 +327,28 @@ function StopForm({ route, onFormSubmit }: { route: Route; onFormSubmit: () => v
   );
 }
 
-function RouteTitle({ route, onUpdate }: { route: Route, onUpdate: () => void }) {
-  const [isEditing, setIsEditing] = React.useState(false);
-  const [name, setName] = React.useState(route.name);
-  const db = useFirestore();
-
-  const handleUpdate = async () => {
-    if (!db || name === route.name) {
-      setIsEditing(false);
-      return;
-    }
-    const routeRef = doc(db, 'routes', route.id);
-    try {
-      await updateDoc(routeRef, { name: name });
-      toast({ title: 'Route name updated successfully!' });
-      onUpdate();
-    } catch (error: any) {
-      toast({ variant: 'destructive', title: 'Error updating name', description: error.message });
-      setName(route.name); // Revert on error
-    } finally {
-      setIsEditing(false);
-    }
-  };
-
-  if (isEditing) {
-    return (
-      <div className="flex-1 flex items-center gap-2">
-        <Input 
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="h-9"
-          autoFocus
-          onKeyDown={(e) => e.key === 'Enter' && handleUpdate()}
-          onBlur={handleUpdate}
-        />
-        <Button size="icon" className="h-9 w-9" onClick={handleUpdate}><Check /></Button>
-      </div>
-    );
-  }
-
-  return (
-    <AccordionTrigger className="flex-1 hover:no-underline px-4 py-2 text-left">
-      <span>{route.name}</span>
-    </AccordionTrigger>
-  );
-}
 
 export function RouteManager() {
   const { data: routes, loading, setData: setRoutes } = useCollection<Route>('routes');
   const db = useFirestore();
+  const [editingRouteId, setEditingRouteId] = React.useState<string | null>(null);
+  const [editingName, setEditingName] = React.useState('');
 
   const handleCreateReturnTrip = async (route: Route) => {
     if (!db) return;
 
-    // 1. Reverse the name
     const nameParts = route.name.split('@')[0].split('-').map(p => p.trim());
     const reversedName = nameParts.length > 1 
       ? `${nameParts[1]} - ${nameParts[0]} @ RETURN` 
       : `${route.name} @ RETURN`;
 
-    // 2. Reverse stops and clear arrival times
     const reversedStops = [...route.stops].reverse().map(stop => ({
       ...stop,
       arrivalTime: '', // Clear arrival time
     }));
 
     try {
-      const routesCollection = collection(db, 'routes');
-      await addDoc(routesCollection, {
+      await addDoc(collection(db, 'routes'), {
         name: reversedName,
         stops: reversedStops,
       });
@@ -425,6 +379,31 @@ export function RouteManager() {
     }
   };
 
+  const handleStartEditing = (route: Route, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingRouteId(route.id);
+    setEditingName(route.name);
+  };
+  
+  const handleCancelEditing = () => {
+    setEditingRouteId(null);
+    setEditingName('');
+  };
+
+  const handleUpdateRouteName = async () => {
+    if (!db || !editingRouteId) return;
+    const routeRef = doc(db, 'routes', editingRouteId);
+    try {
+      await updateDoc(routeRef, { name: editingName });
+      toast({ title: 'Route name updated successfully!' });
+      // No need to force refresh, useCollection will update it
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'Error updating name', description: error.message });
+    } finally {
+      handleCancelEditing();
+    }
+  };
+
   const refreshRouteData = async (routeId: string) => {
     if (!db || !routes) return;
     const routeRef = doc(db, 'routes', routeId);
@@ -433,16 +412,7 @@ export function RouteManager() {
       const updatedRoute = {id: routeSnap.id, ...routeSnap.data()} as Route;
       setRoutes(currentRoutes => currentRoutes?.map(r => r.id === routeId ? updatedRoute : r) || []);
     }
-  }
-
-  const forceRefreshAllRoutes = async () => {
-     if (!db) return;
-     const routesCollection = collection(db, 'routes');
-     const snapshot = await getDoc(routesCollection as any);
-     const newRoutes = snapshot.docs.map((doc: any) => ({id: doc.id, ...doc.data()} as Route));
-     setRoutes(newRoutes);
   };
-
 
   return (
     <Card>
@@ -459,65 +429,80 @@ export function RouteManager() {
           <Accordion type="single" collapsible className="w-full">
             {routes?.map((route) => (
               <AccordionItem key={route.id} value={route.id}>
-                <div className="flex items-center w-full">
-                  <RouteTitle route={route} onUpdate={() => forceRefreshAllRoutes()} />
-                  <Button
-                      variant="ghost"
-                      size="icon"
-                      className="mr-2"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        // This seems to be a React state issue where we need to manually make the component aware of the change
-                        const accordionContent = (e.currentTarget as HTMLElement).closest('.flex')?.nextElementSibling;
-                        if(accordionContent) accordionContent.setAttribute('data-state', 'open');
-                         const input = (e.currentTarget as HTMLElement).closest('.flex')?.querySelector('input');
-                         if(input) input.focus();
-                         const routeTitle = (e.currentTarget as HTMLElement).closest('.flex')?.querySelector('button');
-                          if(routeTitle) routeTitle.click();
-                      }}
-                      title="Edit Route Name"
-                  >
-                      <Edit className="h-4 w-4 text-muted-foreground" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="mr-2"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleCreateReturnTrip(route);
-                    }}
-                    title="Create Return Trip"
-                  >
-                    <Copy className="h-4 w-4 text-primary" />
-                  </Button>
-                   <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                         <Button
+                <div className="flex items-center w-full border-b">
+                   <AccordionTrigger className="flex-1 hover:no-underline px-4 py-2 text-left border-none">
+                     {editingRouteId === route.id ? (
+                        <div className="flex-1 flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                          <Input 
+                            value={editingName}
+                            onChange={(e) => setEditingName(e.target.value)}
+                            className="h-9"
+                            autoFocus
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleUpdateRouteName();
+                              if (e.key === 'Escape') handleCancelEditing();
+                            }}
+                          />
+                           <Button size="icon" className="h-9 w-9" onClick={handleUpdateRouteName}><Check /></Button>
+                           <Button size="icon" variant="ghost" className="h-9 w-9" onClick={handleCancelEditing}><X /></Button>
+                        </div>
+                     ) : (
+                       <span>{route.name}</span>
+                     )}
+                  </AccordionTrigger>
+                   {editingRouteId !== route.id && (
+                     <>
+                      <Button
                           variant="ghost"
                           size="icon"
-                          className="mr-2 text-destructive hover:text-destructive hover:bg-destructive/10"
-                        >
-                          <Trash className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Are you sure you want to delete this route?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This will permanently delete the route "{route.name}" and all its stops. This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => handleDeleteRoute(route.id)}
-                            className="bg-destructive hover:bg-destructive/90">
-                            Delete Route
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                          className="mr-2"
+                          onClick={(e) => handleStartEditing(route, e)}
+                          title="Edit Route Name"
+                      >
+                          <Edit className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="mr-2"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCreateReturnTrip(route);
+                        }}
+                        title="Create Return Trip"
+                      >
+                        <Copy className="h-4 w-4 text-primary" />
+                      </Button>
+                      <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="mr-4 text-destructive hover:text-destructive hover:bg-destructive/10"
+                              onClick={e => e.stopPropagation()}
+                            >
+                              <Trash className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Are you sure you want to delete this route?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This will permanently delete the route "{route.name}" and all its stops. This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteRoute(route.id)}
+                                className="bg-destructive hover:bg-destructive/90">
+                                Delete Route
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                     </>
+                   )}
                 </div>
                 <AccordionContent>
                   <StopForm route={route} onFormSubmit={() => refreshRouteData(route.id)} />
