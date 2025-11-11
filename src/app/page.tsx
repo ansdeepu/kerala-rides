@@ -9,22 +9,37 @@ import { useRouter } from 'next/navigation';
 import { simulateBusMovement } from '@/lib/bus-simulator';
 import type { Route } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { MapPin, Bus as BusIcon, Circle, CheckCircle, Navigation } from 'lucide-react';
+import { MapPin, Bus as BusIcon, Circle, CheckCircle, Clock } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 
-function StopTimeline({ stops, nextStopIndex, direction }: { stops: Stop[], nextStopIndex: number, direction: 'forward' | 'backward' }) {
+function StopTimeline({ stops, nextStopIndex, direction, eta }: { stops: Stop[], nextStopIndex: number, direction: 'forward' | 'backward', eta?: string }) {
   if (!stops || stops.length === 0) {
-    return <div className="text-center text-muted-foreground">No stops defined for this route.</div>
+    return <div className="text-center text-muted-foreground p-8">No stops defined for this route.</div>
   }
   
+  const routeNotStarted = eta === "Route has not started";
+
   return (
     <ScrollArea className="h-full">
         <div className="p-4 md:p-8">
             <ol>
+                {routeNotStarted && (
+                  <li className="flex gap-4 mb-4">
+                      <div className="flex flex-col items-center">
+                          <Clock className="w-6 h-6 text-muted-foreground" />
+                          <div className="w-px h-12 bg-border my-2" />
+                      </div>
+                      <div>
+                          <p className="font-semibold text-muted-foreground">Route has not started</p>
+                          <p className="text-sm text-muted-foreground">The bus is at the first stop.</p>
+                      </div>
+                  </li>
+                )}
                 {stops.map((stop, index) => {
-                    const isCompleted = direction === 'forward' ? nextStopIndex > index : nextStopIndex < index;
-                    const isCurrent = nextStopIndex === index;
+                    const isCompleted = !routeNotStarted && (direction === 'forward' ? nextStopIndex > index : nextStopIndex < index);
+                    const isCurrent = !routeNotStarted && (nextStopIndex === index);
+                    const isFirstStopBeforeStart = routeNotStarted && index === 0;
 
                     return (
                     <li key={stop.name} className="flex gap-4">
@@ -32,12 +47,12 @@ function StopTimeline({ stops, nextStopIndex, direction }: { stops: Stop[], next
                             {isCompleted ? (
                                 <CheckCircle className="w-6 h-6 text-primary" />
                             ) : (
-                                <Circle className={cn("w-6 h-6", isCurrent ? "text-primary animate-pulse" : "text-muted-foreground")} />
+                                <Circle className={cn("w-6 h-6", (isCurrent || isFirstStopBeforeStart) ? "text-primary animate-pulse" : "text-muted-foreground")} />
                             )}
                             {index < stops.length - 1 && <div className="w-px h-12 bg-border my-2" />}
                         </div>
                         <div>
-                            <p className={cn("font-semibold", isCurrent && "text-primary")}>{stop.name}</p>
+                            <p className={cn("font-semibold", (isCurrent || isFirstStopBeforeStart) && "text-primary")}>{stop.name}</p>
                             <p className="text-sm text-muted-foreground">{stop.arrivalTime}</p>
                         </div>
                     </li>
@@ -120,7 +135,12 @@ export default function Home() {
                 <CardDescription>Bus No: {selectedBus.number}</CardDescription>
               </CardHeader>
               <CardContent className="h-[calc(100%-80px)]">
-                 <StopTimeline stops={selectedBus.stops || []} nextStopIndex={selectedBus.nextStopIndex} direction={selectedBus.direction}/>
+                 <StopTimeline 
+                    stops={selectedBus.stops || []} 
+                    nextStopIndex={selectedBus.nextStopIndex} 
+                    direction={selectedBus.direction}
+                    eta={selectedBus.eta}
+                 />
               </CardContent>
             </Card>
           ) : (
