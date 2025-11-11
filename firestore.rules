@@ -17,7 +17,8 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-        return getRole() == 'admin';
+        // This is a temporary admin check. For production, use custom claims.
+        return request.auth.token.email == 'ss.deepu@gmail.com';
     }
 
     // User profiles are readable by any signed-in user.
@@ -36,7 +37,9 @@ service cloud.firestore {
     match /routes/{routeId} {
         allow read: if isSignedIn();
         allow create, delete: if isAdmin();
-        allow update: if isAdmin() || (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['currentLocation', 'updatedAt']));
+        // Admins can perform any update. Other users can only update specific fields for live tracking.
+        allow update: if isAdmin() || 
+                      (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['currentLocation', 'updatedAt']));
     }
   }
 }
