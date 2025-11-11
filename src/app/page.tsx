@@ -46,11 +46,15 @@ function StopTimeline({ stops, nextStopIndex, direction, eta, historicStops, sel
                     const isCurrent = isToday && !historicStops && !routeNotStarted && (nextStopIndex === index);
                     const isFirstStopBeforeStart = isToday && !historicStops && routeNotStarted && index === 0;
 
-                    const timeDifference = stop.actualArrivalTime ? new Date(`1970-01-01T${stop.actualArrivalTime.replace(/(AM|PM)/, '')}:00`).getTime() - new Date(`1970-01-01T${stop.arrivalTime.replace(/(AM|PM)/, '')}:00`).getTime() : 0;
-                    const diffMinutes = Math.round(timeDifference / 60000);
                     let statusText = '';
                     let statusClass = '';
-                    if (stop.actualArrivalTime) {
+                    if (stop.actualArrivalTime && stop.arrivalTime) {
+                      try {
+                        const actualTime = new Date(`1970-01-01T${stop.actualArrivalTime.replace(/(AM|PM)/, '').trim()}`);
+                        const scheduledTime = new Date(`1970-01-01T${stop.arrivalTime.replace(/(AM|PM)/, '').trim()}`);
+                        const timeDifference = actualTime.getTime() - scheduledTime.getTime();
+                        const diffMinutes = Math.round(timeDifference / 60000);
+                        
                         if (diffMinutes > 5) {
                             statusText = `Delayed by ${diffMinutes} min`;
                             statusClass = 'text-destructive';
@@ -61,6 +65,11 @@ function StopTimeline({ stops, nextStopIndex, direction, eta, historicStops, sel
                             statusText = `On Time`;
                             statusClass = 'text-green-600';
                         }
+                      } catch(e) {
+                        // In case of invalid time format
+                        statusText = "Invalid time format";
+                        statusClass = 'text-muted-foreground';
+                      }
                     }
 
                     return (
