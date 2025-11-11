@@ -39,6 +39,18 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_FIREBASE_APP_ID: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
     NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
   },
+   devIndicators: {
+    allowedDevOrigins: [
+      '*.google.com',
+      '*.cloud.goog',
+      '*.cloud.run',
+      '*.dev',
+      '*.app',
+      '*.web.app',
+      '*.firebaseapp.com',
+      '*.cloudworkstations.dev',
+    ],
+  },
 };
 
 export default nextConfig;
