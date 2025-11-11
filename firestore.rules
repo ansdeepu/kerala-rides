@@ -40,6 +40,13 @@ service cloud.firestore {
         // Admins can perform any update. Other users can only update specific fields for live tracking.
         allow update: if isAdmin() || 
                       (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['currentLocation', 'updatedAt']));
+        
+        // Historical trip data can be read by any signed-in user.
+        // Writes are only allowed for admins or for updating actual arrival times.
+        match /history/{tripId} {
+            allow read: if isSignedIn();
+            allow write: if isAdmin() || (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasAll(['stops']));
+        }
     }
   }
 }

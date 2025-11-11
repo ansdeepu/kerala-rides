@@ -47,6 +47,7 @@
                     "properties": {
                         "name": { "type": "string" },
                         "arrivalTime": { "type": "string" },
+                        "actualArrivalTime": { "type": "string" },
                         "location": {
                             "type": "object",
                             "properties": {
@@ -78,6 +79,21 @@
             }
         },
         "required": ["name", "stops"]
+    },
+    "Trip": {
+      "title": "Daily Trip",
+      "description": "Represents a single day's run of a specific route, tracking actual performance.",
+      "type": "object",
+      "properties": {
+        "date": {
+          "type": "string",
+          "description": "The date of the trip in YYYY-MM-DD format."
+        },
+        "stops": {
+          "$ref": "#/entities/Route/properties/stops"
+        }
+      },
+      "required": ["date", "stops"]
     }
   },
   "auth": {
@@ -91,6 +107,10 @@
     "/routes/{routeId}": {
         "schema": { "$ref": "#/entities/Route" },
         "description": "Stores all available bus routes, which are treated as active buses."
+    },
+    "/routes/{routeId}/history/{tripId}": {
+      "schema": { "$ref": "#/entities/Trip" },
+      "description": "Stores the historical performance data for each day a route runs. The tripId should be the date in YYYY-MM-DD format."
     }
   }
 }

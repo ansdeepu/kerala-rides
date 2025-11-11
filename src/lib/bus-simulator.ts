@@ -1,5 +1,8 @@
 'use client';
 import type { Bus, Stop } from './types';
+import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
+import { format } from 'date-fns';
+
 
 // Helper to convert "hh:mm AM/PM" to a Date object for today
 function timeToDate(timeStr: string): Date | null {
@@ -23,6 +26,41 @@ function timeToDate(timeStr: string): Date | null {
   now.setHours(hours, minutes, 0, 0);
   return now;
 }
+
+// Function to update or create a trip document with actual arrival times
+async function updateTripHistory(routeId: string, stopIndex: number, actualTime: Date) {
+    const db = getFirestore();
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    const tripRef = doc(db, `routes/${routeId}/history/${todayStr}`);
+    
+    try {
+        const tripDoc = await getDoc(tripRef);
+        let stops: Stop[] = [];
+
+        if (tripDoc.exists()) {
+            stops = tripDoc.data().stops || [];
+        } else {
+            // If trip doesn't exist, create it from the route definition
+            const routeRef = doc(db, 'routes', routeId);
+            const routeDoc = await getDoc(routeRef);
+            if (routeDoc.exists()) {
+                stops = routeDoc.data().stops.map((s: any) => ({ ...s, actualArrivalTime: undefined })) || [];
+            }
+        }
+        
+        if (stops[stopIndex] && !stops[stopIndex].actualArrivalTime) {
+            stops[stopIndex].actualArrivalTime = format(actualTime, 'hh:mm a');
+
+            await setDoc(tripRef, {
+                date: todayStr,
+                stops: stops,
+            }, { merge: true });
+        }
+    } catch (error) {
+        console.error("Error updating trip history:", error);
+    }
+}
+
 
 // This function simulates the movement of buses along their routes.
 // It will not move buses that are being actively "driven" by a user.
@@ -61,8 +99,8 @@ export function simulateBusMovement(currentBuses: Bus[], drivingBusId: string | 
     
     // Filter out stops with invalid times before processing
     const validStopTimes = stops
-        .map(stop => ({ stop, time: timeToDate(stop.arrivalTime) }))
-        .filter(item => item.time !== null) as { stop: Stop, time: Date }[];
+        .map((stop, index) => ({ stop, time: timeToDate(stop.arrivalTime), originalIndex: index }))
+        .filter(item => item.time !== null) as { stop: Stop, time: Date, originalIndex: number }[];
 
     if (validStopTimes.length < 2) {
         // Not enough valid stops to create a route segment
@@ -99,6 +137,11 @@ export function simulateBusMovement(currentBuses: Bus[], drivingBusId: string | 
             const fromTime = validStopTimes[i].time;
             const toTime = validStopTimes[i+1].time;
 
+             // Update history if bus just "arrived"
+            if (now >= toTime && (bus.nextStopIndex <= validStopTimes[i+1].originalIndex)) {
+                updateTripHistory(bus.id, validStopTimes[i+1].originalIndex, toTime);
+            }
+
             if (now >= fromTime && now <= toTime) {
                 const fromStop = validStopTimes[i].stop;
                 const toStop = validStopTimes[i+1].stop;
@@ -112,9 +155,7 @@ export function simulateBusMovement(currentBuses: Bus[], drivingBusId: string | 
                     lng: fromStop.location.lng + (toStop.location.lng - fromStop.location.lng) * progress,
                 };
                 
-                // Find the original index from the main stops array
-                const originalStopIndex = stops.findIndex(s => s.name === toStop.name && s.arrivalTime === toStop.arrivalTime);
-                bus.nextStopIndex = originalStopIndex !== -1 ? originalStopIndex : i + 1;
+                bus.nextStopIndex = validStopTimes[i+1].originalIndex;
                 
                 const etaMillis = toTime.getTime() - now.getTime();
                 const etaMinutes = Math.round(etaMillis / 60000);
@@ -129,11 +170,10 @@ export function simulateBusMovement(currentBuses: Bus[], drivingBusId: string | 
            let lastDepartedIndex = validStopTimes.findIndex(item => item.time > now) - 1;
            if (lastDepartedIndex < 0) lastDepartedIndex = validStopTimes.length - 1;
 
-           const lastDepartedStop = validStopTimes[lastDepartedIndex].stop;
-           bus.currentLocation = lastDepartedStop.location;
-
-           const originalStopIndex = stops.findIndex(s => s.name === lastDepartedStop.name && s.arrivalTime === lastDepartedStop.arrivalTime);
-           bus.nextStopIndex = (originalStopIndex !== -1 ? originalStopIndex : lastDepartedIndex) + 1;
+           const lastDepartedStopInfo = validStopTimes[lastDepartedIndex];
+           bus.currentLocation = lastDepartedStopInfo.stop.location;
+           
+           bus.nextStopIndex = lastDepartedStopInfo.originalIndex + 1;
            bus.eta = "At Stop";
         }
         

@@ -9,6 +9,7 @@ export interface UserProfile {
 export interface Stop {
   name: string;
   arrivalTime: string;
+  actualArrivalTime?: string; // New optional field
   location: {
     lat: number;
     lng: number;
@@ -27,4 +28,11 @@ export interface Bus {
   nextStopName?: string;
   direction: 'forward' | 'backward';
   updatedAt?: any;
+}
+
+// Represents a single day's run of a route
+export interface Trip {
+  id: string;
+  date: string; // YYYY-MM-DD
+  stops: Stop[];
 }
