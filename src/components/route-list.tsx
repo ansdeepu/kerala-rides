@@ -103,14 +103,14 @@ export function RouteList({ buses, onBusSelect, isLoading }: RouteListProps) {
                                 <CardHeader className='p-4 pb-2'>
                                     <div className="flex items-start justify-between gap-2">
                                         <CardTitle className={cn(
-                                            "text-md font-bold font-headline",
+                                            "text-md font-bold font-headline break-words",
                                             isFinished && 'text-foreground/70'
                                         )}>
                                             {bus.name}
                                         </CardTitle>
                                         <span
                                             className={cn(
-                                            "text-xs font-semibold px-2 py-1 rounded-full whitespace-nowrap",
+                                            "text-xs font-semibold px-2 py-1 rounded-full",
                                             bus.status === "On Time" && "bg-green-100 text-green-800",
                                             bus.status === "Delayed" && "bg-orange-100 text-orange-800",
                                             bus.status === "Early" && "bg-blue-100 text-blue-800",
