@@ -8,7 +8,6 @@ import { useRouter } from 'next/navigation';
 
 import { KeralaRidesLogo } from './icons';
 import { Button } from './ui/button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { Input } from './ui/input';
 import { useUser } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
@@ -22,8 +21,12 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
+interface NavSidebarProps {
+    searchQuery: string;
+    setSearchQuery: (query: string) => void;
+}
 
-export function NavSidebar() {
+export function NavSidebar({ searchQuery, setSearchQuery }: NavSidebarProps) {
   const { user } = useUser();
   const [isAdmin, setIsAdmin] = React.useState(false);
   const router = useRouter();
@@ -45,7 +48,6 @@ export function NavSidebar() {
   const userInitial = user?.displayName?.charAt(0).toUpperCase() || <UserIcon />;
 
   return (
-    <TooltipProvider>
       <div className="flex flex-col h-full w-72 bg-card p-4 border-r">
         <header className="flex items-center gap-2 mb-6">
           <KeralaRidesLogo className="w-8 h-8 text-primary" />
@@ -54,7 +56,12 @@ export function NavSidebar() {
 
         <div className="relative mb-6">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-          <Input placeholder="Global search..." className="pl-10" />
+          <Input 
+            placeholder="Global search..." 
+            className="pl-10" 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
         
         <nav className="flex flex-col gap-2">
@@ -106,6 +113,5 @@ export function NavSidebar() {
           </DropdownMenu>
         </div>
       </div>
-    </TooltipProvider>
   );
 }

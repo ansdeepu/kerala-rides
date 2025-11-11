@@ -1,22 +1,21 @@
 'use client';
 
 import * as React from 'react';
-import { SidebarProvider, Sidebar, SidebarInset } from '@/components/ui/sidebar';
 import { NavSidebar } from '@/components/nav-sidebar';
 import { RouteList } from '@/components/route-list';
-import type { Bus, Stop, Trip } from '@/lib/types';
+import type { Bus, Trip } from '@/lib/types';
 import { useUser, useCollection, useDoc } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { simulateBusMovement } from '@/lib/bus-simulator';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Bus as BusIcon, CalendarIcon, MapPin } from 'lucide-react';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { StopTimeline } from '@/components/stop-timeline';
+import { SearchResults } from '@/components/search-results';
 
 
 export default function Home() {
@@ -27,8 +26,9 @@ export default function Home() {
   
   const [buses, setBuses] = React.useState<Bus[]>([]);
   const [selectedBusId, setSelectedBusId] = React.useState<string | null>(null);
-  const [isSidebarOpen, setSidebarOpen] = React.useState(true);
   const [drivingBusId, setDrivingBusId] = React.useState<string | null>(null);
+
+  const [searchQuery, setSearchQuery] = React.useState('');
 
   const [selectedDate, setSelectedDate] = React.useState<Date>(new Date());
   const dateString = format(selectedDate, 'yyyy-MM-dd');
@@ -71,24 +71,29 @@ export default function Home() {
   }
   
   const isToday = format(selectedDate, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
+  const showSearchResults = searchQuery.length > 0;
+  const showBusDetails = !showSearchResults && selectedBus;
 
   return (
       <div className="flex h-screen bg-background">
-        <NavSidebar />
+        <NavSidebar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
         <main className="flex-1 grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-4 p-4 h-full overflow-hidden">
           
           {/* Route List Column */}
           <div className="md:col-span-1 xl:col-span-1 h-full">
             <RouteList 
               buses={buses}
-              onBusSelect={setSelectedBusId}
+              onBusSelect={(id) => {
+                setSelectedBusId(id);
+                setSearchQuery(''); // Clear search when a bus is selected
+              }}
               selectedBusId={selectedBusId}
             />
           </div>
 
-          {/* Details Column */}
+          {/* Details / Search Results Column */}
           <div className="md:col-span-2 xl:col-span-3 h-full overflow-y-auto">
-             {selectedBus ? (
+             {showBusDetails && selectedBus ? (
               <Card className="h-full flex-1 flex flex-col">
                 <CardHeader>
                   <div className="flex justify-between items-center">
@@ -135,21 +140,16 @@ export default function Home() {
                   />
                 </CardContent>
               </Card>
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <Card className="max-w-md text-center bg-transparent border-dashed">
-                  <CardHeader>
-                    <CardTitle className="font-headline text-primary flex items-center justify-center gap-2">
-                      <MapPin />
-                      Select a Route
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p>Please select a route from the list to see its details and stop timeline.</p>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
+            ) : showSearchResults ? (
+              <SearchResults 
+                routes={buses} 
+                query={searchQuery} 
+                onResultClick={(id) => {
+                  setSelectedBusId(id);
+                  setSearchQuery('');
+                }}
+              />
+            ) : null }
           </div>
         </main>
       </div>
