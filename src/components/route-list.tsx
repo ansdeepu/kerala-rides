@@ -93,13 +93,19 @@ export function RouteList({ buses, onBusSelect, isLoading }: RouteListProps) {
                     {filteredAndSortedBuses.map((bus) => (
                     <Card
                         key={bus.id}
-                        className="transition-all cursor-pointer hover:shadow-lg hover:border-primary"
+                        className={cn(
+                            "transition-all cursor-pointer hover:shadow-lg hover:border-primary",
+                            bus.status === 'Finished' && 'bg-muted/50 text-muted-foreground hover:bg-muted'
+                        )}
                         onClick={() => onBusSelect(bus.id)}
                     >
                         <CardHeader className='p-4'>
                             <div className="flex items-start justify-between">
                                 <div>
-                                    <CardTitle className="text-md font-bold font-headline">
+                                    <CardTitle className={cn(
+                                        "text-md font-bold font-headline",
+                                        bus.status === 'Finished' && 'text-foreground/70'
+                                    )}>
                                         {bus.name}
                                     </CardTitle>
                                     <CardDescription>
