@@ -33,10 +33,12 @@ service cloud.firestore {
     match /routes/{routeId} {
         allow read: if isSignedIn();
         allow create, delete: if isAdmin();
-        allow update: if isAdmin() || (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['currentLocation', 'updatedAt']));
+        // Admins can update anything.
+        // Any signed-in user can update only the currentLocation and updatedAt fields for live tracking.
+        allow update: if isAdmin() || (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['currentLocation', 'updatedAt', 'status', 'eta', 'nextStopIndex', 'nextStopName']));
 
         // Historical trip data can be read by any signed-in user.
-        // Writes are only allowed for admins or for updating actual arrival times (by the simulator).
+        // Writes are only allowed for admins or for updating actual arrival times (by the simulator or driver).
         match /history/{tripId} {
             allow read: if isSignedIn();
             allow write: if isAdmin() || (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasAll(['stops']));

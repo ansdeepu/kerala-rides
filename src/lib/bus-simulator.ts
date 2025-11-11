@@ -1,6 +1,6 @@
 'use client';
 import type { Bus, Stop } from './types';
-import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, getDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { format } from 'date-fns';
 
 
@@ -70,17 +70,38 @@ export function simulateBusMovement(currentBuses: Bus[], drivingBusId: string | 
   }
 
   const now = new Date();
+  const db = getFirestore();
 
   return currentBuses.map(bus => {
-    // If a user is actively driving this bus, just enrich it with route data and return.
-    // The live location is being updated directly in Firestore and will be reflected via the useCollection hook.
+    // If a user is actively driving this bus, do not simulate its movement.
+    // The location is being updated by the user's device.
+    // We just calculate the ETA based on the live location.
     if (bus.id === drivingBusId) {
         const nextStop = bus.stops[bus.nextStopIndex];
+        let eta = 'N/A';
+
+        if (nextStop && bus.currentLocation) {
+             const R = 6371; // Radius of the Earth in km
+             const dLat = (nextStop.location.lat - bus.currentLocation.lat) * (Math.PI / 180);
+             const dLon = (nextStop.location.lng - bus.currentLocation.lng) * (Math.PI / 180);
+             const a =
+               Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+               Math.cos(bus.currentLocation.lat * (Math.PI / 180)) *
+                 Math.cos(nextStop.location.lat * (Math.PI / 180)) *
+                 Math.sin(dLon / 2) *
+                 Math.sin(dLon / 2);
+             const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+             const distance = R * c; // Distance in km
+             const avgSpeed = 30; // Average speed in km/h
+             const etaMinutes = Math.round((distance / avgSpeed) * 60);
+             eta = `${etaMinutes} min`;
+        }
+
          return {
             ...bus,
             nextStopName: nextStop?.name || 'N/A',
-            eta: nextStop ? '1 min' : 'N/A', // A simple placeholder ETA for live driving
-            status: 'On Time'
+            eta,
+            status: 'On Time' // For driven buses, status is determined by driver. For now, default to On Time.
         };
     }
     
@@ -182,6 +203,17 @@ export function simulateBusMovement(currentBuses: Bus[], drivingBusId: string | 
         if (randomStatus < 0.1) bus.status = 'Delayed';
         else if (randomStatus > 0.9) bus.status = 'Early';
         else bus.status = 'On Time';
+
+        // Also update Firestore for the simulated bus
+        const routeRef = doc(db, 'routes', bus.id);
+        updateDoc(routeRef, {
+            currentLocation: bus.currentLocation,
+            status: bus.status,
+            eta: bus.eta,
+            nextStopIndex: bus.nextStopIndex,
+            nextStopName: bus.nextStopName,
+            updatedAt: serverTimestamp(),
+        });
     }
     
     return bus;

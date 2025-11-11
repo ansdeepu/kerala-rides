@@ -2,9 +2,10 @@
 
 import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useDoc, useUser } from '@/firebase';
+import { doc, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { useDoc, useFirestore, useUser } from '@/firebase';
 import type { Bus, Trip } from '@/lib/types';
-import { Bus as BusIcon, CalendarIcon } from 'lucide-react';
+import { Bus as BusIcon, CalendarIcon, PlayCircle, Square } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -12,12 +13,29 @@ import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { StopTimeline } from '@/components/stop-timeline';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useLocation } from '@/hooks/use-location';
+import { toast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 export default function RouteDetailsPage() {
     const { user, loading: userLoading } = useUser();
     const router = useRouter();
     const params = useParams();
     const busId = params.id as string;
+    const db = useFirestore();
+
+    const { location, error: locationError, startTracking, stopTracking } = useLocation();
+    const [isDriving, setIsDriving] = React.useState(false);
 
     const [liveBus, setLiveBus] = React.useState<Bus | null>(null);
     const { data: route, loading: routeLoading } = useDoc<Bus>(`routes/${busId}`);
@@ -29,16 +47,69 @@ export default function RouteDetailsPage() {
 
     React.useEffect(() => {
         if (!userLoading && !user) {
-        router.push('/login');
+            router.push('/login');
         }
     }, [user, userLoading, router]);
-
+    
     // This effect is to handle the real-time update from the `route` doc
     React.useEffect(() => {
         if (route) {
             setLiveBus(route);
         }
     }, [route]);
+    
+    // Effect to handle location updates when driving
+    React.useEffect(() => {
+        if (isDriving && location && db && busId) {
+            const routeRef = doc(db, 'routes', busId);
+            updateDoc(routeRef, {
+                currentLocation: {
+                    lat: location.latitude,
+                    lng: location.longitude
+                },
+                updatedAt: serverTimestamp(),
+            }).catch(e => {
+                console.error("Error updating bus location: ", e);
+                toast({
+                    variant: "destructive",
+                    title: "Could not update location",
+                    description: "There was an error sending your location to the server."
+                })
+            });
+        }
+    }, [isDriving, location, db, busId]);
+
+    // Effect to show location errors
+    React.useEffect(() => {
+        if (locationError) {
+            toast({
+                variant: 'destructive',
+                title: 'Location Error',
+                description: locationError,
+            });
+            setIsDriving(false);
+            stopTracking();
+        }
+    }, [locationError, stopTracking]);
+
+    const handleStartDriving = () => {
+        startTracking();
+        setIsDriving(true);
+        toast({
+            title: "Real-time Tracking Started",
+            description: "You are now broadcasting your location for this bus.",
+        });
+    };
+    
+    const handleStopDriving = () => {
+        stopTracking();
+        setIsDriving(false);
+         toast({
+            title: "Real-time Tracking Stopped",
+            description: "You are no longer broadcasting your location.",
+        });
+    };
+
 
     if (userLoading || routeLoading) {
         return (
@@ -79,7 +150,7 @@ export default function RouteDetailsPage() {
     return (
         <main className="flex-1 p-4 h-screen overflow-y-auto">
             <div className="container mx-auto max-w-4xl">
-                <header className="mb-8 flex items-center justify-between">
+                <header className="mb-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                     <div>
                         <h1 className="text-3xl font-bold font-headline flex items-center gap-3">
                             <BusIcon />
@@ -87,29 +158,59 @@ export default function RouteDetailsPage() {
                         </h1>
                         <p className="text-muted-foreground">Status: {isToday && liveBus ? liveBus.status : `Viewing history for ${format(selectedDate, 'PPP')}`}</p>
                     </div>
-                    <Popover>
-                        <PopoverTrigger asChild>
-                            <Button
-                            variant={"outline"}
-                            className={cn(
-                                "w-[240px] justify-start text-left font-normal",
-                                !selectedDate && "text-muted-foreground"
-                            )}
-                            >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
+                    <div className="flex items-center gap-2">
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                variant={"outline"}
+                                className={cn(
+                                    "w-full md:w-[240px] justify-start text-left font-normal",
+                                    !selectedDate && "text-muted-foreground"
+                                )}
+                                >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="end">
+                                <Calendar
+                                mode="single"
+                                selected={selectedDate}
+                                onSelect={(date) => date && setSelectedDate(date)}
+                                disabled={(date) => date > new Date() || date < new Date("2024-01-01")}
+                                initialFocus
+                                />
+                            </PopoverContent>
+                        </Popover>
+
+                        {isDriving ? (
+                            <Button onClick={handleStopDriving} variant="destructive" className="w-full md:w-auto">
+                                <Square className="mr-2 h-4 w-4" /> Stop Driving
                             </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="end">
-                            <Calendar
-                            mode="single"
-                            selected={selectedDate}
-                            onSelect={(date) => date && setSelectedDate(date)}
-                            disabled={(date) => date > new Date() || date < new Date("2024-01-01")}
-                            initialFocus
-                            />
-                        </PopoverContent>
-                    </Popover>
+                        ) : (
+                             <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button className="bg-green-600 hover:bg-green-700 w-full md:w-auto">
+                                        <PlayCircle className="mr-2 h-4 w-4" /> Start Driving
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Start Live Tracking?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        This will use your phone's GPS to broadcast its location as this bus's live location. Your location will be visible to all users viewing this route. Are you sure you want to proceed?
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleStartDriving} className="bg-green-600 hover:bg-green-700">
+                                        Confirm & Start
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        )}
+                    </div>
                 </header>
                 <main>
                     <StopTimeline 

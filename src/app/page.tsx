@@ -31,7 +31,7 @@ export default function Home() {
     }
   }, [user, loading, router]);
 
-  // Simulate bus movement
+  // Simulate bus movement for non-driving buses
   React.useEffect(() => {
     const interval = setInterval(() => {
       setBuses((currentBuses) => simulateBusMovement(currentBuses, drivingBusId));
