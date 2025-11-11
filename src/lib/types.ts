@@ -28,6 +28,7 @@ export interface Bus {
   nextStopName?: string;
   direction: 'forward' | 'backward';
   updatedAt?: any;
+  distance?: number;
 }
 
 // Represents a single day's run of a route

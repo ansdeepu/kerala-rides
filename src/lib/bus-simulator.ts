@@ -61,6 +61,20 @@ async function updateTripHistory(routeId: string, stopIndex: number, actualTime:
     }
 }
 
+function calculateDistance(loc1: {lat: number, lng: number}, loc2: {lat: number, lng: number}): number {
+    const R = 6371; // Radius of the Earth in km
+    const dLat = (loc2.lat - loc1.lat) * (Math.PI / 180);
+    const dLon = (loc2.lng - loc1.lng) * (Math.PI / 180);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(loc1.lat * (Math.PI / 180)) *
+        Math.cos(loc2.lat * (Math.PI / 180)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c; // Distance in km
+}
+
 
 // This function simulates the movement of buses along their routes.
 // It will not move buses that are being actively "driven" by a user.
@@ -79,19 +93,10 @@ export function simulateBusMovement(currentBuses: Bus[], drivingBusId: string | 
     if (bus.id === drivingBusId) {
         const nextStop = bus.stops[bus.nextStopIndex];
         let eta = 'N/A';
+        let distance = undefined;
 
         if (nextStop && bus.currentLocation) {
-             const R = 6371; // Radius of the Earth in km
-             const dLat = (nextStop.location.lat - bus.currentLocation.lat) * (Math.PI / 180);
-             const dLon = (nextStop.location.lng - bus.currentLocation.lng) * (Math.PI / 180);
-             const a =
-               Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-               Math.cos(bus.currentLocation.lat * (Math.PI / 180)) *
-                 Math.cos(nextStop.location.lat * (Math.PI / 180)) *
-                 Math.sin(dLon / 2) *
-                 Math.sin(dLon / 2);
-             const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-             const distance = R * c; // Distance in km
+             distance = calculateDistance(bus.currentLocation, nextStop.location);
              const avgSpeed = 30; // Average speed in km/h
              const etaMinutes = Math.round((distance / avgSpeed) * 60);
              eta = `${etaMinutes} min`;
@@ -101,6 +106,7 @@ export function simulateBusMovement(currentBuses: Bus[], drivingBusId: string | 
             ...bus,
             nextStopName: nextStop?.name || 'N/A',
             eta,
+            distance,
             status: 'On Time' // For driven buses, status is determined by driver. For now, default to On Time.
         };
     }
@@ -137,6 +143,7 @@ export function simulateBusMovement(currentBuses: Bus[], drivingBusId: string | 
     const lastStopTime = validStopTimes[validStopTimes.length - 1].time;
 
     let segmentFound = false;
+    let distance: number | undefined = undefined;
 
     if (now < firstStopTime) {
         // Before the route starts, park at the first stop
@@ -182,6 +189,8 @@ export function simulateBusMovement(currentBuses: Bus[], drivingBusId: string | 
                 const etaMinutes = Math.round(etaMillis / 60000);
                 bus.eta = `${Math.max(0, etaMinutes)} min`;
 
+                distance = calculateDistance(bus.currentLocation, toStop.location);
+
                 segmentFound = true;
                 break;
             }
@@ -192,10 +201,14 @@ export function simulateBusMovement(currentBuses: Bus[], drivingBusId: string | 
            if (lastDepartedIndex < 0) lastDepartedIndex = validStopTimes.length - 1;
 
            const lastDepartedStopInfo = validStopTimes[lastDepartedIndex];
+           const nextStopInfo = validStopTimes[lastDepartedIndex + 1];
+
            bus.currentLocation = lastDepartedStopInfo.stop.location;
-           
            bus.nextStopIndex = lastDepartedStopInfo.originalIndex + 1;
            bus.eta = "At Stop";
+           if (nextStopInfo) {
+               distance = calculateDistance(bus.currentLocation, nextStopInfo.stop.location);
+           }
         }
         
         bus.nextStopName = stops[bus.nextStopIndex]?.name || 'End of Route';
@@ -213,7 +226,10 @@ export function simulateBusMovement(currentBuses: Bus[], drivingBusId: string | 
             nextStopIndex: bus.nextStopIndex,
             nextStopName: bus.nextStopName,
             updatedAt: serverTimestamp(),
+            distance,
         });
+
+        bus.distance = distance;
     }
     
     return bus;
