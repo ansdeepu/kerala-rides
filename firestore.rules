@@ -36,8 +36,9 @@ service cloud.firestore {
     }
     
     // Buses can be read by any signed-in user.
-    // Admins can create/update/delete buses.
-    // Any signed-in user can update the currentLocation of a bus.
+    // Admins can create/delete buses.
+    // Admins can update any field.
+    // Any signed-in user can update the currentLocation and updatedAt fields.
     match /buses/{busId} {
         allow read: if isSignedIn();
         allow create, delete: if isAdmin();

@@ -90,7 +90,7 @@ const convertTo24Hour = (time: string): string => {
 };
 
 
-function StopForm({ route, onFormSubmit }: { route: Route; onFormSubmit: () => void }) {
+function StopForm({ route }: { route: Route; }) {
   const db = useFirestore();
   const [editingStop, setEditingStop] = React.useState<Stop | null>(null);
 
@@ -135,7 +135,6 @@ function StopForm({ route, onFormSubmit }: { route: Route; onFormSubmit: () => v
             );
             await updateDoc(routeRef, { stops: updatedStops });
             toast({ title: 'Stop Deleted', description: `"${stopToDelete.name}" has been removed from the route.` });
-            onFormSubmit();
         }
     } catch (error: any) {
       toast({
@@ -190,7 +189,6 @@ function StopForm({ route, onFormSubmit }: { route: Route; onFormSubmit: () => v
 
       await updateDoc(routeRef, { stops: updatedStops });
       cancelEdit();
-      onFormSubmit();
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -282,7 +280,6 @@ function StopForm({ route, onFormSubmit }: { route: Route; onFormSubmit: () => v
                 <FormItem>
                   <FormLabel>Arrival Time</FormLabel>
                   <FormControl>
-                    {/* The input needs 24h format, the form hook provides 12h format. Convert on change */}
                     <Input 
                       type="time" 
                       value={convertTo24Hour(field.value)}
@@ -497,7 +494,7 @@ export function RouteManager() {
                    )}
                 </div>
                 <AccordionContent>
-                  <StopForm route={route} onFormSubmit={() => {}} />
+                  <StopForm route={route} />
                 </AccordionContent>
               </AccordionItem>
             ))}
