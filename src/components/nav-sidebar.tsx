@@ -2,14 +2,14 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Search, Shield, HelpCircle, LogOut, Share2, User as UserIcon } from 'lucide-react';
+import { Search, Shield, HelpCircle, LogOut, Share2, User as UserIcon, Bus } from 'lucide-react';
 import { getAuth, signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 
 import { KeralaRidesLogo } from './icons';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { useCollection, useUser } from '@/firebase';
+import { useUser } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Separator } from './ui/separator';
 import {
@@ -20,41 +20,20 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { RouteList } from './route-list';
-import type { Bus } from '@/lib/types';
-import { ScrollArea } from './ui/scroll-area';
 
 interface NavSidebarProps {
     searchQuery: string;
     setSearchQuery: (query: string) => void;
-    buses: Bus[];
-    setBuses: (buses: Bus[]) => void;
-    selectedBusId: string | null;
-    onBusSelect: (id: string) => void;
 }
 
 export function NavSidebar({ 
     searchQuery, 
     setSearchQuery,
-    buses,
-    setBuses,
-    selectedBusId,
-    onBusSelect
 }: NavSidebarProps) {
   const { user } = useUser();
   const [isAdmin, setIsAdmin] = React.useState(false);
   const router = useRouter();
   const auth = getAuth();
-  
-  const { data: routes, loading: routesLoading } = useCollection<Bus>('routes');
-
-  React.useEffect(() => {
-    if (routes) {
-        setBuses(routes);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [routes]);
-
 
   React.useEffect(() => {
     if (user && user.email === 'ss.deepu@gmail.com') {
@@ -72,7 +51,7 @@ export function NavSidebar({
   const userInitial = user?.displayName?.charAt(0).toUpperCase() || <UserIcon />;
 
   return (
-      <div className="flex flex-col h-full w-96 bg-card p-4 border-r">
+      <div className="flex flex-col h-full w-80 bg-card p-4 border-r">
         <header className="flex items-center gap-2 mb-6 px-4">
           <KeralaRidesLogo className="w-8 h-8 text-primary" />
           <h1 className="text-xl font-bold font-headline">Kerala Rides</h1>
@@ -89,6 +68,12 @@ export function NavSidebar({
         </div>
         
         <nav className="flex flex-col gap-1 px-4 mb-2">
+            <Button variant="secondary" className="justify-start" asChild>
+                <Link href="/">
+                    <Bus />
+                    All Routes
+                </Link>
+            </Button>
             {isAdmin && (
               <Button variant="ghost" className="justify-start" asChild>
                 <Link href="/admin">
@@ -109,20 +94,9 @@ export function NavSidebar({
             </Button>
         </nav>
         
-        <Separator className="mx-4" />
-
-        <div className='flex-1 min-h-0'>
-            <RouteList 
-              buses={buses}
-              onBusSelect={onBusSelect}
-              selectedBusId={selectedBusId}
-              isLoading={routesLoading}
-            />
-        </div>
-
+        <Separator className="mx-4 my-4" />
 
         <div className="mt-auto">
-          <Separator className="my-2 mx-4" />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="w-full justify-start h-auto p-2">

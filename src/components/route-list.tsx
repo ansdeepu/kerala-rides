@@ -33,11 +33,10 @@ const parseTime = (name: string): Date | null => {
 interface RouteListProps {
     buses: Bus[];
     onBusSelect: (id: string) => void;
-    selectedBusId: string | null;
     isLoading: boolean;
 }
 
-export function RouteList({ buses, onBusSelect, selectedBusId, isLoading }: RouteListProps) {
+export function RouteList({ buses, onBusSelect, isLoading }: RouteListProps) {
     
     const filteredAndSortedBuses = React.useMemo(() => {
         const now = new Date().getTime();
@@ -75,35 +74,32 @@ export function RouteList({ buses, onBusSelect, selectedBusId, isLoading }: Rout
 
     if (isLoading) {
         return (
-            <div className="p-4 pt-2 space-y-3">
-                <h3 className="px-2 text-lg font-bold">All Routes</h3>
-                <Skeleton className="h-20 w-full" />
-                <Skeleton className="h-20 w-full" />
-                <Skeleton className="h-20 w-full" />
-                <Skeleton className="h-20 w-full" />
+            <div className="space-y-4">
+                <Skeleton className="h-24 w-full" />
+                <Skeleton className="h-24 w-full" />
+                <Skeleton className="h-24 w-full" />
+                <Skeleton className="h-24 w-full" />
+                <Skeleton className="h-24 w-full" />
             </div>
         )
     }
     
     return (
         <div className="flex flex-col h-full">
-            <h3 className="px-4 text-lg font-bold mt-2">All Routes</h3>
-            <ScrollArea className="h-full">
+            <h2 className="text-2xl font-bold font-headline mb-4">All Routes</h2>
+            <ScrollArea className="h-full -mr-4 pr-4">
                 {filteredAndSortedBuses.length > 0 ? (
-                <div className="p-4 space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {filteredAndSortedBuses.map((bus) => (
                     <Card
                         key={bus.id}
-                        className={cn(
-                            "transition-all cursor-pointer hover:shadow-md hover:border-primary",
-                            selectedBusId === bus.id && "border-primary shadow-lg bg-primary/10"
-                        )}
+                        className="transition-all cursor-pointer hover:shadow-lg hover:border-primary"
                         onClick={() => onBusSelect(bus.id)}
                     >
                         <CardHeader className='p-4'>
                             <div className="flex items-start justify-between">
                                 <div>
-                                    <CardTitle className="text-sm font-bold font-headline">
+                                    <CardTitle className="text-md font-bold font-headline">
                                         {bus.name}
                                     </CardTitle>
                                     <CardDescription>
