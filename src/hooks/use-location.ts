@@ -48,11 +48,18 @@ export function useLocation(options: PositionOptions = {}) {
       navigator.geolocation.clearWatch(watchIdRef.current);
     }
 
+    const highAccuracyOptions = {
+        ...options,
+        enableHighAccuracy: true, 
+        timeout: 10000, 
+        maximumAge: 0
+    };
+
     // Start a new watch
     watchIdRef.current = navigator.geolocation.watchPosition(
       handleSuccess,
       handleError,
-      options
+      highAccuracyOptions
     );
   };
 
