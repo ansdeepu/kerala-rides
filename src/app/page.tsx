@@ -77,9 +77,8 @@ export default function Home() {
   return (
       <div className="flex h-screen bg-background">
         <NavSidebar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
-        <main className="flex-1 flex flex-col gap-4 p-4 h-full overflow-hidden">
-          
-          <div className="flex-none">
+
+        <div className="w-1/3 border-r overflow-y-auto">
             <RouteList 
               buses={buses}
               onBusSelect={(id) => {
@@ -88,8 +87,9 @@ export default function Home() {
               }}
               selectedBusId={selectedBusId}
             />
-          </div>
+        </div>
 
+        <main className="flex-1 flex flex-col gap-4 p-4 h-full overflow-hidden">
           <div className="flex-1 min-h-0">
              {showBusDetails && selectedBus ? (
               <Card className="h-full flex-1 flex flex-col">
@@ -141,7 +141,7 @@ export default function Home() {
             ) : showSearchResults ? (
               <SearchResults 
                 routes={buses} 
-                query={searchQuery} 
+                query={query} 
                 onResultClick={(id) => {
                   setSelectedBusId(id);
                   setSearchQuery('');

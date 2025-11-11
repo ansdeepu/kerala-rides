@@ -43,7 +43,7 @@ export function RouteList({ buses, onBusSelect, selectedBusId }: { buses: Bus[],
                 finished.push(bus);
             } else {
                 const busTime = parseTime(bus.name);
-                if (busTime && busTime.getTime() > now) {
+                if (busTime && busTime.getTime() > now && bus.status === 'Not Started') {
                     upcoming.push(bus);
                 } else {
                     pastOrActive.push(bus);
@@ -66,12 +66,12 @@ export function RouteList({ buses, onBusSelect, selectedBusId }: { buses: Bus[],
     }, [buses]);
     
     return (
-        <Card>
+        <Card className="h-full rounded-none border-0 border-r">
             <CardHeader>
                 <CardTitle>All Routes</CardTitle>
                 <CardDescription>Select a route to see details.</CardDescription>
             </CardHeader>
-            <ScrollArea className="h-64">
+            <ScrollArea className="h-[calc(100vh_-_8rem)]">
                 {filteredAndSortedBuses.length > 0 ? (
                 <div className="p-4 pt-0 space-y-3">
                     {filteredAndSortedBuses.map((bus) => (
@@ -79,7 +79,7 @@ export function RouteList({ buses, onBusSelect, selectedBusId }: { buses: Bus[],
                         key={bus.id}
                         className={cn(
                             "transition-all cursor-pointer hover:shadow-md hover:border-primary",
-                            selectedBusId === bus.id && "border-primary shadow-md"
+                            selectedBusId === bus.id && "border-primary shadow-lg"
                         )}
                         onClick={() => onBusSelect(bus.id)}
                     >
