@@ -6,7 +6,6 @@ import { cn } from '@/lib/utils';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from './ui/scroll-area';
 import { Bus as BusIcon } from 'lucide-react';
-import { Input } from './ui/input';
 
 const parseTime = (name: string): Date | null => {
     const timeMatch = name.match(/@\s*(\d{1,2}:\d{2}\s*(?:AM|PM))/i);
@@ -31,20 +30,15 @@ const parseTime = (name: string): Date | null => {
 };
 
 export function RouteList({ buses, onBusSelect, selectedBusId }: { buses: Bus[], onBusSelect: (id: string) => void, selectedBusId: string | null }) {
-    const [searchQuery, setSearchQuery] = React.useState("");
-
+    
     const filteredAndSortedBuses = React.useMemo(() => {
-        const filtered = buses.filter((bus) =>
-        bus.name.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-
         const now = new Date().getTime();
 
         const upcoming: Bus[] = [];
         const pastOrActive: Bus[] = [];
         const finished: Bus[] = [];
 
-        for (const bus of filtered) {
+        for (const bus of buses) {
             if (bus.status === 'Finished') {
                 finished.push(bus);
             } else {
@@ -69,20 +63,17 @@ export function RouteList({ buses, onBusSelect, selectedBusId }: { buses: Bus[],
         finished.sort(timeSorter);
 
         return [...upcoming, ...pastOrActive, ...finished];
-    }, [buses, searchQuery]);
+    }, [buses]);
     
     return (
-        <Card className="h-full flex flex-col">
+        <Card>
             <CardHeader>
                 <CardTitle>All Routes</CardTitle>
                 <CardDescription>Select a route to see details.</CardDescription>
             </CardHeader>
-            <div className="px-6 pb-4">
-                {/* I'll add the global search here later */}
-            </div>
-            <ScrollArea className="flex-1">
+            <ScrollArea className="h-64">
                 {filteredAndSortedBuses.length > 0 ? (
-                <div className="p-4 space-y-3">
+                <div className="p-4 pt-0 space-y-3">
                     {filteredAndSortedBuses.map((bus) => (
                     <Card
                         key={bus.id}

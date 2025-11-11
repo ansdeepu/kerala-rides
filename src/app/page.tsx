@@ -77,10 +77,9 @@ export default function Home() {
   return (
       <div className="flex h-screen bg-background">
         <NavSidebar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
-        <main className="flex-1 grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-4 p-4 h-full overflow-hidden">
+        <main className="flex-1 flex flex-col gap-4 p-4 h-full overflow-hidden">
           
-          {/* Route List Column */}
-          <div className="md:col-span-1 xl:col-span-1 h-full">
+          <div className="flex-none">
             <RouteList 
               buses={buses}
               onBusSelect={(id) => {
@@ -91,8 +90,7 @@ export default function Home() {
             />
           </div>
 
-          {/* Details / Search Results Column */}
-          <div className="md:col-span-2 xl:col-span-3 h-full overflow-y-auto">
+          <div className="flex-1 min-h-0">
              {showBusDetails && selectedBus ? (
               <Card className="h-full flex-1 flex flex-col">
                 <CardHeader>
@@ -149,7 +147,12 @@ export default function Home() {
                   setSearchQuery('');
                 }}
               />
-            ) : null }
+            ) : (
+                <div className="flex h-full items-center justify-center rounded-lg border border-dashed text-muted-foreground">
+                    <p>Select a route to see its details and timeline.</p>
+                </div>
+            )
+          }
           </div>
         </main>
       </div>
