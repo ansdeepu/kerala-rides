@@ -1,0 +1,16 @@
+{
+  "name": "Kerala Rides",
+  "short_name": "KeralaRides",
+  "description": "Track KSRTC buses in real-time in Kerala.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f4f4f5",
+  "theme_color": "#0077b6",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

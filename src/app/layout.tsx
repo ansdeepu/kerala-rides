@@ -7,6 +7,7 @@ import { FirebaseClientProvider } from '@/firebase/client-provider';
 export const metadata: Metadata = {
   title: 'Kerala Rides',
   description: 'Track KSRTC buses in real-time',
+  manifest: '/manifest.json',
 };
 
 export default function RootLayout({
