@@ -9,7 +9,7 @@ import { useRouter } from 'next/navigation';
 import { KeralaRidesLogo } from './icons';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { useUser } from '@/firebase';
+import { useCollection, useUser } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Separator } from './ui/separator';
 import {
@@ -20,17 +20,41 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { RouteList } from './route-list';
+import type { Bus } from '@/lib/types';
+import { ScrollArea } from './ui/scroll-area';
 
 interface NavSidebarProps {
     searchQuery: string;
     setSearchQuery: (query: string) => void;
+    buses: Bus[];
+    setBuses: (buses: Bus[]) => void;
+    selectedBusId: string | null;
+    onBusSelect: (id: string) => void;
 }
 
-export function NavSidebar({ searchQuery, setSearchQuery }: NavSidebarProps) {
+export function NavSidebar({ 
+    searchQuery, 
+    setSearchQuery,
+    buses,
+    setBuses,
+    selectedBusId,
+    onBusSelect
+}: NavSidebarProps) {
   const { user } = useUser();
   const [isAdmin, setIsAdmin] = React.useState(false);
   const router = useRouter();
   const auth = getAuth();
+  
+  const { data: routes, loading: routesLoading } = useCollection<Bus>('routes');
+
+  React.useEffect(() => {
+    if (routes) {
+        setBuses(routes);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [routes]);
+
 
   React.useEffect(() => {
     if (user && user.email === 'ss.deepu@gmail.com') {
@@ -48,14 +72,14 @@ export function NavSidebar({ searchQuery, setSearchQuery }: NavSidebarProps) {
   const userInitial = user?.displayName?.charAt(0).toUpperCase() || <UserIcon />;
 
   return (
-      <div className="flex flex-col h-full w-72 bg-card p-4 border-r">
-        <header className="flex items-center gap-2 mb-6">
+      <div className="flex flex-col h-full w-96 bg-card p-4 border-r">
+        <header className="flex items-center gap-2 mb-6 px-4">
           <KeralaRidesLogo className="w-8 h-8 text-primary" />
           <h1 className="text-xl font-bold font-headline">Kerala Rides</h1>
         </header>
 
-        <div className="relative mb-6">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+        <div className="relative mb-4 px-4">
+          <Search className="absolute left-7 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
           <Input 
             placeholder="Global search..." 
             className="pl-10" 
@@ -64,7 +88,7 @@ export function NavSidebar({ searchQuery, setSearchQuery }: NavSidebarProps) {
           />
         </div>
         
-        <nav className="flex flex-col gap-2">
+        <nav className="flex flex-col gap-1 px-4 mb-2">
             {isAdmin && (
               <Button variant="ghost" className="justify-start" asChild>
                 <Link href="/admin">
@@ -84,9 +108,21 @@ export function NavSidebar({ searchQuery, setSearchQuery }: NavSidebarProps) {
                 Share App
             </Button>
         </nav>
+        
+        <Separator className="mx-4" />
+
+        <div className='flex-1 min-h-0'>
+            <RouteList 
+              buses={buses}
+              onBusSelect={onBusSelect}
+              selectedBusId={selectedBusId}
+              isLoading={routesLoading}
+            />
+        </div>
+
 
         <div className="mt-auto">
-          <Separator className="my-4" />
+          <Separator className="my-2 mx-4" />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="w-full justify-start h-auto p-2">
@@ -95,7 +131,7 @@ export function NavSidebar({ searchQuery, setSearchQuery }: NavSidebarProps) {
                     {user?.photoURL && <AvatarImage src={user.photoURL} alt={user.displayName || 'User'} />}
                     <AvatarFallback>{userInitial}</AvatarFallback>
                   </Avatar>
-                  <div className="text-left">
+                  <div className="text-left overflow-hidden">
                     <p className="font-semibold text-sm truncate">{user?.displayName}</p>
                     <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
                   </div>

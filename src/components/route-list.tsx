@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from './ui/scroll-area';
 import { Bus as BusIcon } from 'lucide-react';
+import { Skeleton } from './ui/skeleton';
 
 const parseTime = (name: string): Date | null => {
     const timeMatch = name.match(/@\s*(\d{1,2}:\d{2}\s*(?:AM|PM))/i);
@@ -29,7 +30,14 @@ const parseTime = (name: string): Date | null => {
     return new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes, 0);
 };
 
-export function RouteList({ buses, onBusSelect, selectedBusId }: { buses: Bus[], onBusSelect: (id: string) => void, selectedBusId: string | null }) {
+interface RouteListProps {
+    buses: Bus[];
+    onBusSelect: (id: string) => void;
+    selectedBusId: string | null;
+    isLoading: boolean;
+}
+
+export function RouteList({ buses, onBusSelect, selectedBusId, isLoading }: RouteListProps) {
     
     const filteredAndSortedBuses = React.useMemo(() => {
         const now = new Date().getTime();
@@ -64,49 +72,56 @@ export function RouteList({ buses, onBusSelect, selectedBusId }: { buses: Bus[],
 
         return [...upcoming, ...pastOrActive, ...finished];
     }, [buses]);
+
+    if (isLoading) {
+        return (
+            <div className="p-4 pt-2 space-y-3">
+                <h3 className="px-2 text-lg font-bold">All Routes</h3>
+                <Skeleton className="h-20 w-full" />
+                <Skeleton className="h-20 w-full" />
+                <Skeleton className="h-20 w-full" />
+                <Skeleton className="h-20 w-full" />
+            </div>
+        )
+    }
     
     return (
-        <Card className="h-full rounded-none border-0 border-r">
-            <CardHeader>
-                <CardTitle>All Routes</CardTitle>
-                <CardDescription>Select a route to see details.</CardDescription>
-            </CardHeader>
-            <ScrollArea className="h-[calc(100vh_-_8rem)]">
+        <div className="flex flex-col h-full">
+            <h3 className="px-4 text-lg font-bold mt-2">All Routes</h3>
+            <ScrollArea className="h-full">
                 {filteredAndSortedBuses.length > 0 ? (
-                <div className="p-4 pt-0 space-y-3">
+                <div className="p-4 space-y-3">
                     {filteredAndSortedBuses.map((bus) => (
                     <Card
                         key={bus.id}
                         className={cn(
                             "transition-all cursor-pointer hover:shadow-md hover:border-primary",
-                            selectedBusId === bus.id && "border-primary shadow-lg"
+                            selectedBusId === bus.id && "border-primary shadow-lg bg-primary/10"
                         )}
                         onClick={() => onBusSelect(bus.id)}
                     >
-                        <CardHeader>
-                        <div className="flex items-start justify-between">
-                            <div>
-                            <CardTitle className="text-sm font-bold font-headline">
-                                {bus.name}
-                            </CardTitle>
-                            <CardDescription>
-                                Status: {bus.status}
-                            </CardDescription>
+                        <CardHeader className='p-4'>
+                            <div className="flex items-start justify-between">
+                                <div>
+                                    <CardTitle className="text-sm font-bold font-headline">
+                                        {bus.name}
+                                    </CardTitle>
+                                    <CardDescription>
+                                        Status: {bus.status}
+                                    </CardDescription>
+                                </div>
+                                <span
+                                    className={cn(
+                                    "text-xs font-semibold px-2 py-1 rounded-full",
+                                    bus.status === "On Time" && "bg-green-100 text-green-800",
+                                    bus.status === "Delayed" && "bg-orange-100 text-orange-800",
+                                    bus.status === "Early" && "bg-blue-100 text-blue-800",
+                                    (bus.status === "Not Started" || bus.status === "Finished") && "bg-gray-100 text-gray-800"
+                                    )}
+                                >
+                                    {bus.status}
+                                </span>
                             </div>
-                            <div className="flex items-center gap-2">
-                            <span
-                                className={cn(
-                                "text-xs font-semibold px-2 py-1 rounded-full",
-                                bus.status === "On Time" && "bg-green-100 text-green-800",
-                                bus.status === "Delayed" && "bg-orange-100 text-orange-800",
-                                bus.status === "Early" && "bg-blue-100 text-blue-800",
-                                (bus.status === "Not Started" || bus.status === "Finished") && "bg-gray-100 text-gray-800"
-                                )}
-                            >
-                                {bus.status}
-                            </span>
-                            </div>
-                        </div>
                         </CardHeader>
                     </Card>
                     ))}
@@ -119,6 +134,6 @@ export function RouteList({ buses, onBusSelect, selectedBusId }: { buses: Bus[],
                 </div>
                 )}
             </ScrollArea>
-        </Card>
+        </div>
     )
 }
