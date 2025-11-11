@@ -2,10 +2,9 @@
 
 import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { useDoc, useUser } from '@/firebase';
 import type { Bus, Trip } from '@/lib/types';
-import { Bus as BusIcon, CalendarIcon, ArrowLeft } from 'lucide-react';
+import { Bus as BusIcon, CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -43,17 +42,19 @@ export default function RouteDetailsPage() {
 
     if (userLoading || routeLoading) {
         return (
-            <div className="container mx-auto p-4 md:p-8">
-                <header className="mb-8 flex items-center justify-between">
-                    <Skeleton className="h-10 w-1/2" />
-                    <Skeleton className="h-10 w-32" />
-                </header>
-                <div className="space-y-4">
-                    <Skeleton className="h-16 w-full" />
-                    <Skeleton className="h-16 w-full" />
-                    <Skeleton className="h-16 w-full" />
+            <main className="flex-1 p-4 h-screen overflow-y-auto">
+                <div className="container mx-auto p-4 md:p-8">
+                    <header className="mb-8 flex items-center justify-between">
+                        <Skeleton className="h-10 w-1/2" />
+                        <Skeleton className="h-10 w-32" />
+                    </header>
+                    <div className="space-y-4">
+                        <Skeleton className="h-16 w-full" />
+                        <Skeleton className="h-16 w-full" />
+                        <Skeleton className="h-16 w-full" />
+                    </div>
                 </div>
-            </div>
+            </main>
         );
     }
     
@@ -63,16 +64,12 @@ export default function RouteDetailsPage() {
     
     if (!route) {
         return (
-             <div className="container mx-auto max-w-4xl p-4 md:p-8 text-center">
-                 <h2 className="text-2xl font-bold font-headline text-destructive">Route Not Found</h2>
-                 <p className="mt-2 text-muted-foreground">The requested route could not be found.</p>
-                 <Button asChild className="mt-4">
-                     <Link href="/">
-                         <ArrowLeft className="mr-2" />
-                         Back to All Routes
-                     </Link>
-                 </Button>
-             </div>
+             <main className="flex-1 p-4 h-screen overflow-y-auto">
+                 <div className="container mx-auto max-w-4xl p-4 md:p-8 text-center">
+                     <h2 className="text-2xl font-bold font-headline text-destructive">Route Not Found</h2>
+                     <p className="mt-2 text-muted-foreground">The requested route could not be found.</p>
+                 </div>
+            </main>
         )
     }
 
@@ -80,55 +77,51 @@ export default function RouteDetailsPage() {
     const busForDisplay = isToday ? liveBus : route;
     
     return (
-        <div className="container mx-auto max-w-4xl p-4 md:p-8">
-            <header className="mb-8 flex items-center justify-between">
-                <div>
-                    <Button asChild variant="outline" className="mb-4">
-                        <Link href="/">
-                            <ArrowLeft className="mr-2" />
-                            Back to All Routes
-                        </Link>
-                    </Button>
-                    <h1 className="text-3xl font-bold font-headline flex items-center gap-3">
-                        <BusIcon />
-                        Route: {busForDisplay?.name}
-                    </h1>
-                    <p className="text-muted-foreground">Status: {isToday && liveBus ? liveBus.status : `Viewing history for ${format(selectedDate, 'PPP')}`}</p>
-                </div>
-                <Popover>
-                    <PopoverTrigger asChild>
-                        <Button
-                        variant={"outline"}
-                        className={cn(
-                            "w-[240px] justify-start text-left font-normal",
-                            !selectedDate && "text-muted-foreground"
-                        )}
-                        >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
-                        </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="end">
-                        <Calendar
-                        mode="single"
-                        selected={selectedDate}
-                        onSelect={(date) => date && setSelectedDate(date)}
-                        disabled={(date) => date > new Date() || date < new Date("2024-01-01")}
-                        initialFocus
-                        />
-                    </PopoverContent>
-                </Popover>
-            </header>
-            <main>
-                <StopTimeline 
-                    stops={busForDisplay?.stops || []} 
-                    nextStopIndex={busForDisplay?.nextStopIndex || 0} 
-                    direction={busForDisplay?.direction || 'forward'}
-                    eta={busForDisplay?.eta}
-                    historicStops={historicTrip?.stops}
-                    selectedDate={selectedDate}
-                />
-            </main>
-        </div>
+        <main className="flex-1 p-4 h-screen overflow-y-auto">
+            <div className="container mx-auto max-w-4xl">
+                <header className="mb-8 flex items-center justify-between">
+                    <div>
+                        <h1 className="text-3xl font-bold font-headline flex items-center gap-3">
+                            <BusIcon />
+                            Route: {busForDisplay?.name}
+                        </h1>
+                        <p className="text-muted-foreground">Status: {isToday && liveBus ? liveBus.status : `Viewing history for ${format(selectedDate, 'PPP')}`}</p>
+                    </div>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button
+                            variant={"outline"}
+                            className={cn(
+                                "w-[240px] justify-start text-left font-normal",
+                                !selectedDate && "text-muted-foreground"
+                            )}
+                            >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="end">
+                            <Calendar
+                            mode="single"
+                            selected={selectedDate}
+                            onSelect={(date) => date && setSelectedDate(date)}
+                            disabled={(date) => date > new Date() || date < new Date("2024-01-01")}
+                            initialFocus
+                            />
+                        </PopoverContent>
+                    </Popover>
+                </header>
+                <main>
+                    <StopTimeline 
+                        stops={busForDisplay?.stops || []} 
+                        nextStopIndex={busForDisplay?.nextStopIndex || 0} 
+                        direction={busForDisplay?.direction || 'forward'}
+                        eta={busForDisplay?.eta}
+                        historicStops={historicTrip?.stops}
+                        selectedDate={selectedDate}
+                    />
+                </main>
+            </div>
+        </main>
     );
 }

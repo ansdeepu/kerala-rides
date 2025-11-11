@@ -3,6 +3,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
+import { LayoutProvider } from '@/components/layout-provider';
 
 export const metadata: Metadata = {
   title: 'Kerala Rides',
@@ -25,7 +26,9 @@ export default function RootLayout({
       </head>
       <body className={cn('font-body antialiased')}>
         <FirebaseClientProvider>
-          {children}
+          <LayoutProvider>
+            {children}
+          </LayoutProvider>
         </FirebaseClientProvider>
         <Toaster />
       </body>

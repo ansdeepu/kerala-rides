@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, Bus, Smartphone, Database } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Bus, Smartphone, Database } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -11,18 +10,12 @@ import {
 
 export default function HelpPage() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="container mx-auto max-w-4xl p-4 md:p-8">
-        <header className="mb-8 flex items-center justify-between">
+    <main className="flex-1 p-4 h-screen overflow-y-auto">
+      <div className="container mx-auto max-w-4xl">
+        <header className="mb-8">
           <h1 className="text-3xl font-bold font-headline text-primary">
             How Kerala Rides Works
           </h1>
-          <Button asChild variant="outline">
-            <Link href="/">
-              <ArrowLeft className="mr-2" />
-              Back to Map
-            </Link>
-          </Button>
         </header>
 
         <div className="space-y-6">
@@ -78,6 +71,6 @@ export default function HelpPage() {
           </Card>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

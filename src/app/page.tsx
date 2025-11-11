@@ -1,22 +1,21 @@
 'use client';
 
 import * as React from 'react';
-import { NavSidebar } from '@/components/nav-sidebar';
 import type { Bus } from '@/lib/types';
-import { useUser, useCollection } from '@/firebase';
+import { useCollection, useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { simulateBusMovement } from '@/lib/bus-simulator';
 import { SearchResults } from '@/components/search-results';
 import { RouteList } from '@/components/route-list';
-
+import { useLayout } from '@/components/layout-provider';
 
 export default function Home() {
   const { user, loading } = useUser();
   const router = useRouter();
+  const { searchQuery, setSearchQuery } = useLayout();
   
   const [buses, setBuses] = React.useState<Bus[]>([]);
   const [drivingBusId, setDrivingBusId] = React.useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = React.useState('');
   
   const { data: routes, loading: routesLoading } = useCollection<Bus>('routes');
 
@@ -56,31 +55,24 @@ export default function Home() {
   }
 
   return (
-      <div className="flex h-screen bg-background">
-        <NavSidebar 
-            searchQuery={searchQuery} 
-            setSearchQuery={setSearchQuery} 
-        />
-
-        <main className="flex-1 p-4 h-full overflow-y-auto">
-             {showSearchResults ? (
-              <SearchResults 
-                routes={buses} 
-                query={searchQuery} 
-                onResultClick={(id) => {
-                  handleRouteSelect(id);
-                  setSearchQuery('');
-                }}
+      <main className="flex-1 p-4 h-screen overflow-y-auto">
+           {showSearchResults ? (
+            <SearchResults 
+              routes={buses} 
+              query={searchQuery} 
+              onResultClick={(id) => {
+                handleRouteSelect(id);
+                setSearchQuery('');
+              }}
+            />
+          ) : (
+              <RouteList 
+                  buses={buses}
+                  onBusSelect={handleRouteSelect}
+                  isLoading={routesLoading}
               />
-            ) : (
-                <RouteList 
-                    buses={buses}
-                    onBusSelect={handleRouteSelect}
-                    isLoading={routesLoading}
-                />
-            )
-          }
-        </main>
-      </div>
+          )
+        }
+      </main>
   );
 }

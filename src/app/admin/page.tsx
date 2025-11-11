@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -27,7 +26,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft } from 'lucide-react';
 import { RouteManager } from '@/components/route-manager';
 
 const routeFormSchema = z.object({
@@ -115,58 +113,54 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="container mx-auto max-w-4xl p-4 md:p-8">
-      <header className="mb-8 flex items-center justify-between">
-        <h1 className="text-3xl font-bold font-headline text-primary">
-          Admin Panel
-        </h1>
-        <Button asChild variant="outline">
-          <Link href="/">
-            <ArrowLeft className="mr-2" />
-            Back to Home
-          </Link>
-        </Button>
-      </header>
+    <main className="flex-1 p-4 h-screen overflow-y-auto">
+      <div className="container mx-auto max-w-4xl">
+        <header className="mb-8">
+          <h1 className="text-3xl font-bold font-headline text-primary">
+            Admin Panel
+          </h1>
+        </header>
 
-      <div className="grid gap-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Create New Bus Route</CardTitle>
-            <CardDescription>
-              Define a new route. Once created, it will appear on the map. You can add stops in the manager below.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Form {...routeForm}>
-              <form
-                onSubmit={routeForm.handleSubmit(onRouteSubmit)}
-                className="space-y-6"
-              >
-                <FormField
-                  control={routeForm.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Route Name</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="e.g., Kottayam - Alappuzha @ 8:00 AM"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <Button type="submit">Create Route</Button>
-              </form>
-            </Form>
-          </CardContent>
-        </Card>
-        
-        <RouteManager />
-        
+        <div className="grid gap-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Create New Bus Route</CardTitle>
+              <CardDescription>
+                Define a new route. Once created, it will appear on the map. You can add stops in the manager below.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Form {...routeForm}>
+                <form
+                  onSubmit={routeForm.handleSubmit(onRouteSubmit)}
+                  className="space-y-6"
+                >
+                  <FormField
+                    control={routeForm.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Route Name</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="e.g., Kottayam - Alappuzha @ 8:00 AM"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <Button type="submit">Create Route</Button>
+                </form>
+              </Form>
+            </CardContent>
+          </Card>
+          
+          <RouteManager />
+          
+        </div>
       </div>
-    </div>
+    </main>
   );
 }

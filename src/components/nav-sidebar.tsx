@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Search, Shield, HelpCircle, LogOut, Share2, User as UserIcon, Bus } from 'lucide-react';
 import { getAuth, signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
@@ -20,6 +21,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { cn } from '@/lib/utils';
+
 
 interface NavSidebarProps {
     searchQuery: string;
@@ -34,6 +37,7 @@ export function NavSidebar({
   const [isAdmin, setIsAdmin] = React.useState(false);
   const router = useRouter();
   const auth = getAuth();
+  const pathname = usePathname();
 
   React.useEffect(() => {
     if (user && user.email === 'ss.deepu@gmail.com') {
@@ -49,6 +53,12 @@ export function NavSidebar({
   };
 
   const userInitial = user?.displayName?.charAt(0).toUpperCase() || <UserIcon />;
+
+  const navLinks = [
+    { href: '/', icon: Bus, label: 'All Routes' },
+    { href: '/admin', icon: Shield, label: 'Admin Panel', adminOnly: true },
+    { href: '/help', icon: HelpCircle, label: 'Help' },
+  ];
 
   return (
       <div className="flex flex-col h-full w-80 bg-card p-4 border-r">
@@ -68,26 +78,22 @@ export function NavSidebar({
         </div>
         
         <nav className="flex flex-col gap-1 px-4 mb-2">
-            <Button variant="secondary" className="justify-start" asChild>
-                <Link href="/">
-                    <Bus />
-                    All Routes
-                </Link>
-            </Button>
-            {isAdmin && (
-              <Button variant="ghost" className="justify-start" asChild>
-                <Link href="/admin">
-                  <Shield />
-                  Admin Panel
-                </Link>
-              </Button>
-            )}
-            <Button variant="ghost" className="justify-start" asChild>
-                <Link href="/help">
-                    <HelpCircle />
-                    Help
-                </Link>
-            </Button>
+            {navLinks.map((link) => {
+              if (link.adminOnly && !isAdmin) return null;
+              return (
+                <Button 
+                  key={link.href}
+                  variant={pathname === link.href ? 'secondary' : 'ghost'} 
+                  className="justify-start" 
+                  asChild
+                >
+                  <Link href={link.href}>
+                    <link.icon />
+                    {link.label}
+                  </Link>
+                </Button>
+              )
+            })}
             <Button variant="ghost" className="justify-start">
                 <Share2 />
                 Share App
