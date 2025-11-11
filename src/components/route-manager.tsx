@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useCollection } from '@/firebase';
-import { doc, updateDoc, getDoc, deleteDoc } from 'firebase/firestore';
+import { doc, updateDoc, getDoc, deleteDoc, addDoc, collection } from 'firebase/firestore';
 import * as z from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -32,7 +32,7 @@ import {
 } from '@/components/ui/form';
 import { useFirestore } from '@/firebase';
 import { toast } from '@/hooks/use-toast';
-import { Trash, Edit, X } from 'lucide-react';
+import { Trash, Edit, X, Copy } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
 
 interface Stop {
@@ -207,7 +207,7 @@ function StopForm({ route, onFormSubmit }: { route: Route; onFormSubmit: () => v
             {route.stops.map((stop, index) => (
               <li key={`${stop.name}-${index}`} className="flex justify-between items-center group">
                 <div>
-                  <strong>{stop.name}</strong> - <span className="text-muted-foreground">Arrives: {stop.arrivalTime}</span>
+                  <strong>{stop.name}</strong> - <span className="text-muted-foreground">Arrives: {stop.arrivalTime || 'Not set'}</span>
                   <br />
                   <span className="text-xs text-muted-foreground">Lat: {stop.location.lat.toFixed(4)}, Lng: {stop.location.lng.toFixed(4)}</span>
                 </div>
@@ -330,6 +330,40 @@ export function RouteManager() {
   const { data: routes, loading, setData: setRoutes } = useCollection<Route>('routes');
   const db = useFirestore();
 
+  const handleCreateReturnTrip = async (route: Route) => {
+    if (!db) return;
+
+    // 1. Reverse the name
+    const nameParts = route.name.split('@')[0].split('-').map(p => p.trim());
+    const reversedName = nameParts.length > 1 
+      ? `${nameParts[1]} - ${nameParts[0]} @ RETURN` 
+      : `${route.name} @ RETURN`;
+
+    // 2. Reverse stops and clear arrival times
+    const reversedStops = [...route.stops].reverse().map(stop => ({
+      ...stop,
+      arrivalTime: '', // Clear arrival time
+    }));
+
+    try {
+      const routesCollection = collection(db, 'routes');
+      await addDoc(routesCollection, {
+        name: reversedName,
+        stops: reversedStops,
+      });
+      toast({
+        title: 'Return Trip Created',
+        description: `A return route for "${route.name}" has been created. Please edit it to set new arrival times.`,
+      });
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Error Creating Return Trip',
+        description: error.message,
+      });
+    }
+  };
+
   const handleDeleteRoute = async (routeId: string) => {
     if (!db) return;
     try {
@@ -373,6 +407,18 @@ export function RouteManager() {
                   <AccordionTrigger className="flex-1 hover:no-underline px-4 py-2 text-left">
                     <span>{route.name}</span>
                   </AccordionTrigger>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="mr-2"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCreateReturnTrip(route);
+                    }}
+                    title="Create Return Trip"
+                  >
+                    <Copy className="h-4 w-4 text-primary" />
+                  </Button>
                    <AlertDialog>
                       <AlertDialogTrigger asChild>
                          <Button
