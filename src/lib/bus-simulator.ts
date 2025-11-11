@@ -8,6 +8,9 @@ function timeToDate(timeStr: string): Date | null {
   }
   const now = new Date();
   const [time, modifier] = timeStr.split(' ');
+  if (!time || !modifier) {
+      return null;
+  }
   let [hours, minutes] = time.split(':').map(Number);
 
   if (modifier.toUpperCase() === 'PM' && hours < 12) {
