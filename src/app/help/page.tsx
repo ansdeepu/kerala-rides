@@ -31,11 +31,16 @@ export default function HelpPage() {
             </CardHeader>
             <CardContent>
               <p>
-                The bus locations you see on the map are part of a **simulation**. This application does not use live GPS data from actual KSRTC buses. The data is generated in the project code to demonstrate how a real-time tracking app would look and feel.
+                This application uses two types of data to show bus locations:
               </p>
-              <p className="mt-2 text-sm text-muted-foreground">
-                In a real-world scenario, this app would connect to a database that receives live GPS coordinates from tracking devices installed on each bus.
-              </p>
+              <ul className="list-disc pl-5 mt-2 space-y-2">
+                <li>
+                  <strong>Simulation Mode:</strong> By default, most bus locations are part of a simulation. The app calculates a bus's position based on the scheduled arrival times for its stops.
+                </li>
+                <li>
+                  <strong>Live GPS Mode:</strong> When a user selects a route and presses the "Start Driving" button, that specific bus's location becomes real-time data, broadcast from that user's phone GPS.
+                </li>
+              </ul>
             </CardContent>
           </Card>
 
@@ -48,7 +53,10 @@ export default function HelpPage() {
             </CardHeader>
             <CardContent>
               <p>
-                No, this application **does not** access your phone's GPS location. Your location is not tracked or used for any feature. The map is centered on a default location, and when you select a bus, it simply focuses on that bus's simulated location.
+                The app only accesses your phone's GPS if you explicitly choose to. By default, your location is not tracked.
+              </p>
+               <p className="mt-2">
+                If you go to a route's detail page and click the <strong>"Start Driving"</strong> button, the app will request permission to use your GPS. If you grant it, your location will be broadcast as that bus's live position until you press "Stop Driving". No other users can see your personal information, only the bus's location on the map.
               </p>
             </CardContent>
           </Card>
@@ -65,7 +73,7 @@ export default function HelpPage() {
                 Users with an **admin** role can add and manage bus routes and stops. The bus data is stored in the project's Firestore database.
               </p>
               <p className="mt-2 text-sm text-muted-foreground">
-                If you are an admin, you can access the <Link href="/admin" className="underline">Admin Panel</Link> to create new routes and add stops with their coordinates. Bus locations themselves are still part of a simulation based on these routes.
+                If you are an admin, you can access the <Link href="/admin" className="underline">Admin Panel</Link> to create new routes and add stops with their coordinates.
               </p>
             </CardContent>
           </Card>
