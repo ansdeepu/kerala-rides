@@ -27,7 +27,7 @@ export interface Bus {
   routeId: string;
   routeName?: string; // Will be added dynamically
   currentLocation: { lat: number; lng: number };
-  status: 'On Time' | 'Delayed' | 'Early';
+  status: 'On Time' | 'Delayed' | 'Early' | 'Not Started' | 'Finished';
   eta?: string;
   stops?: Stop[];
   nextStopIndex: number;

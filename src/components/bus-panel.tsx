@@ -223,7 +223,8 @@ export function BusPanel({
                       "bg-green-100 text-green-800",
                     selectedBus.status === "Delayed" &&
                       "bg-orange-100 text-orange-800",
-                    selectedBus.status === "Early" && "bg-blue-100 text-blue-800"
+                    selectedBus.status === "Early" && "bg-blue-100 text-blue-800",
+                    (selectedBus.status === "Not Started" || selectedBus.status === "Finished") && "bg-gray-100 text-gray-800"
                   )}
                 >
                   {selectedBus.status}
@@ -308,11 +309,13 @@ export function BusPanel({
                           </CardDescription>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span
+                           <span
                             className={cn(
-                              "text-xs font-semibold",
-                              bus.status === "On Time" && "text-green-600",
-                              bus.status === "Delayed" && "text-orange-500"
+                              "text-xs font-semibold px-2 py-1 rounded-full",
+                              bus.status === "On Time" && "bg-green-100 text-green-800",
+                              bus.status === "Delayed" && "bg-orange-100 text-orange-800",
+                              bus.status === "Early" && "bg-blue-100 text-blue-800",
+                              (bus.status === "Not Started" || bus.status === "Finished") && "bg-gray-100 text-gray-800"
                             )}
                           >
                             {bus.status}

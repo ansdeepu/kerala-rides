@@ -85,19 +85,22 @@ export function simulateBusMovement(currentBuses: Bus[], routes: Route[], drivin
     let toStop: Stop;
     let fromTime: Date;
     let toTime: Date;
+    let randomStatusApplied = false;
 
     if (now < firstStopTime) {
         // Before the route starts, park at the first stop
         newBus.currentLocation = validStopTimes[0].stop.location;
-        newBus.nextStopIndex = 1;
-        newBus.status = "On Time";
+        newBus.nextStopIndex = 0; // It's at the first stop
+        newBus.status = "Not Started";
         newBus.eta = "Route has not started";
+        newBus.nextStopName = 'N/A';
     } else if (now > lastStopTime) {
         // After the route ends, park at the last stop
         newBus.currentLocation = validStopTimes[validStopTimes.length - 1].stop.location;
         newBus.nextStopIndex = stops.length; // No next stop
-        newBus.status = "On Time";
+        newBus.status = "Finished";
         newBus.eta = "Route has finished";
+        newBus.nextStopName = 'End of Route';
     } else {
         // Find the current segment of the route
         let segmentFound = false;
@@ -141,15 +144,27 @@ export function simulateBusMovement(currentBuses: Bus[], routes: Route[], drivin
            newBus.nextStopIndex = (originalStopIndex !== -1 ? originalStopIndex : lastDepartedIndex) + 1;
            newBus.eta = "At Stop";
         }
+        
+        newBus.nextStopName = stops[newBus.nextStopIndex]?.name || 'End of Route';
+        const randomStatus = Math.random();
+        if (randomStatus < 0.1) newBus.status = 'Delayed';
+        else if (randomStatus > 0.9) newBus.status = 'Early';
+        else newBus.status = 'On Time';
+        randomStatusApplied = true;
     }
 
-    newBus.nextStopName = stops[newBus.nextStopIndex]?.name || 'End of Route';
-    
-    const randomStatus = Math.random();
-    if (randomStatus < 0.1) newBus.status = 'Delayed';
-    else if (randomStatus > 0.9) newBus.status = 'Early';
-    else newBus.status = 'On Time';
+    if (!newBus.nextStopName) {
+      newBus.nextStopName = stops[newBus.nextStopIndex]?.name || 'End of Route';
+    }
 
+    // Only apply random status if bus is running
+    if (!randomStatusApplied && newBus.status !== 'Not Started' && newBus.status !== 'Finished') {
+      const randomStatus = Math.random();
+      if (randomStatus < 0.1) newBus.status = 'Delayed';
+      else if (randomStatus > 0.9) newBus.status = 'Early';
+      else newBus.status = 'On Time';
+    }
+    
     return newBus;
   });
 }
