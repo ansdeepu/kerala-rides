@@ -16,8 +16,10 @@ interface SearchResultsProps {
 export function SearchResults({ routes, query, onResultClick }: SearchResultsProps) {
   const filteredRoutes = React.useMemo(() => {
     if (!query) return [];
+    const lowercasedQuery = query.toLowerCase();
     return routes.filter(route =>
-      route.name.toLowerCase().includes(query.toLowerCase())
+      route.name.toLowerCase().includes(lowercasedQuery) ||
+      (route.stops && route.stops.some(stop => stop.name.toLowerCase().includes(lowercasedQuery)))
     );
   }, [routes, query]);
 
