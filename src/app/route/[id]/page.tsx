@@ -146,7 +146,8 @@ export default function RouteDetailsPage() {
 
     const isToday = format(selectedDate, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
     const busForDisplay = isToday ? liveBus : route;
-    
+    const status = isToday && liveBus ? liveBus.status : (historicTrip ? 'Finished' : `Viewing history for ${format(selectedDate, 'PPP')}`);
+
     return (
         <main className="flex-1 p-4 h-screen overflow-y-auto">
             <div className="container mx-auto max-w-4xl">
@@ -156,7 +157,18 @@ export default function RouteDetailsPage() {
                             <BusIcon />
                             Route: {busForDisplay?.name}
                         </h1>
-                        <p className="text-muted-foreground">Status: {isToday && liveBus ? liveBus.status : `Viewing history for ${format(selectedDate, 'PPP')}`}</p>
+                        <p className="text-muted-foreground mt-1">
+                            Status: {' '}
+                            <span className={cn(
+                                "font-semibold",
+                                status === "On Time" && "text-green-600",
+                                status === "Delayed" && "text-orange-500",
+                                status === "Early" && "text-blue-600",
+                                (status === "Not Started" || status === "Finished") && "text-gray-500"
+                            )}>
+                                {status}
+                            </span>
+                        </p>
                     </div>
                     <div className="flex items-center gap-2">
                         <Popover>
