@@ -1,7 +1,11 @@
+'use client';
 import type { Bus, Route, Stop } from './types';
 
 // Helper to convert "hh:mm AM/PM" to a Date object for today
-function timeToDate(timeStr: string): Date {
+function timeToDate(timeStr: string): Date | null {
+  if (!timeStr || !timeStr.includes(' ')) {
+    return null; // Return null if the time string is invalid
+  }
   const now = new Date();
   const [time, modifier] = timeStr.split(' ');
   let [hours, minutes] = time.split(':').map(Number);
@@ -27,13 +31,13 @@ export function simulateBusMovement(currentBuses: Bus[], routes: Route[], drivin
   const now = new Date();
 
   return currentBuses.map(bus => {
-    // If a user is actively driving this bus, don't simulate its movement.
-    // Also, if the bus has been updated in the last 15 seconds, assume it's live data.
+    const route = routes.find(r => r.id === bus.routeId);
+
+    // If a user is actively driving this bus, or if it has been recently updated,
+    // don't simulate its movement but still enrich it with route data.
     const lastUpdated = bus.updatedAt?.toDate ? bus.updatedAt.toDate() : new Date(0);
     const secondsSinceUpdate = (now.getTime() - lastUpdated.getTime()) / 1000;
     
-    const route = routes.find(r => r.id === bus.routeId);
-
     if (bus.id === drivingBusId || secondsSinceUpdate < 15) {
       const nextStop = route?.stops[bus.nextStopIndex];
       return {
@@ -41,7 +45,7 @@ export function simulateBusMovement(currentBuses: Bus[], routes: Route[], drivin
         routeName: route ? route.name : 'Unknown Route',
         stops: route ? route.stops : [],
         nextStopName: nextStop?.name || 'N/A',
-        eta: nextStop ? '1 min' : 'N/A', // ETA for live buses is complex, so we'll keep it simple
+        eta: nextStop ? '1 min' : 'N/A',
       };
     }
     
@@ -61,9 +65,21 @@ export function simulateBusMovement(currentBuses: Bus[], routes: Route[], drivin
     const newBus = { ...bus, routeName: route.name, stops: route.stops };
     const { stops } = route;
     
-    const stopTimes = stops.map(stop => timeToDate(stop.arrivalTime));
-    const firstStopTime = stopTimes[0];
-    const lastStopTime = stopTimes[stopTimes.length - 1];
+    // Filter out stops with invalid times before processing
+    const validStopTimes = stops
+        .map(stop => ({ stop, time: timeToDate(stop.arrivalTime) }))
+        .filter(item => item.time !== null) as { stop: Stop, time: Date }[];
+
+    if (validStopTimes.length < 2) {
+        // Not enough valid stops to create a route segment
+        newBus.currentLocation = stops[0]?.location || { lat: 0, lng: 0 };
+        newBus.nextStopIndex = 1;
+        newBus.eta = "Schedule data incomplete";
+        return newBus;
+    }
+
+    const firstStopTime = validStopTimes[0].time;
+    const lastStopTime = validStopTimes[validStopTimes.length - 1].time;
 
     let fromStop: Stop;
     let toStop: Stop;
@@ -72,25 +88,25 @@ export function simulateBusMovement(currentBuses: Bus[], routes: Route[], drivin
 
     if (now < firstStopTime) {
         // Before the route starts, park at the first stop
-        newBus.currentLocation = stops[0].location;
+        newBus.currentLocation = validStopTimes[0].stop.location;
         newBus.nextStopIndex = 1;
         newBus.status = "On Time";
         newBus.eta = "Route has not started";
     } else if (now > lastStopTime) {
         // After the route ends, park at the last stop
-        newBus.currentLocation = stops[stops.length - 1].location;
+        newBus.currentLocation = validStopTimes[validStopTimes.length - 1].stop.location;
         newBus.nextStopIndex = stops.length; // No next stop
         newBus.status = "On Time";
         newBus.eta = "Route has finished";
     } else {
         // Find the current segment of the route
         let segmentFound = false;
-        for (let i = 0; i < stopTimes.length - 1; i++) {
-            if (now >= stopTimes[i] && now <= stopTimes[i+1]) {
-                fromStop = stops[i];
-                toStop = stops[i+1];
-                fromTime = stopTimes[i];
-                toTime = stopTimes[i+1];
+        for (let i = 0; i < validStopTimes.length - 1; i++) {
+            if (now >= validStopTimes[i].time && now <= validStopTimes[i+1].time) {
+                fromStop = validStopTimes[i].stop;
+                toStop = validStopTimes[i+1].stop;
+                fromTime = validStopTimes[i].time;
+                toTime = validStopTimes[i+1].time;
                 
                 const timeInSegment = toTime.getTime() - fromTime.getTime();
                 const timeElapsed = now.getTime() - fromTime.getTime();
@@ -100,8 +116,10 @@ export function simulateBusMovement(currentBuses: Bus[], routes: Route[], drivin
                     lat: fromStop.location.lat + (toStop.location.lat - fromStop.location.lat) * progress,
                     lng: fromStop.location.lng + (toStop.location.lng - fromStop.location.lng) * progress,
                 };
-
-                newBus.nextStopIndex = i + 1;
+                
+                // Find the original index from the main stops array
+                const originalStopIndex = stops.findIndex(s => s.name === toStop.name && s.arrivalTime === toStop.arrivalTime);
+                newBus.nextStopIndex = originalStopIndex !== -1 ? originalStopIndex : i + 1;
                 
                 const etaMillis = toTime.getTime() - now.getTime();
                 const etaMinutes = Math.round(etaMillis / 60000);
@@ -113,11 +131,14 @@ export function simulateBusMovement(currentBuses: Bus[], routes: Route[], drivin
         }
         if (!segmentFound) {
            // If in a layover period, park at the last departed stop
-           let lastDepartedStopIndex = stopTimes.findIndex(st => st > now) - 1;
-           if (lastDepartedStopIndex < 0) lastDepartedStopIndex = stops.length -1; // Park at end
-           
-           newBus.currentLocation = stops[lastDepartedStopIndex].location;
-           newBus.nextStopIndex = lastDepartedStopIndex + 1;
+           let lastDepartedIndex = validStopTimes.findIndex(item => item.time > now) - 1;
+           if (lastDepartedIndex < 0) lastDepartedIndex = validStopTimes.length - 1;
+
+           const lastDepartedStop = validStopTimes[lastDepartedIndex].stop;
+           newBus.currentLocation = lastDepartedStop.location;
+
+           const originalStopIndex = stops.findIndex(s => s.name === lastDepartedStop.name && s.arrivalTime === lastDepartedStop.arrivalTime);
+           newBus.nextStopIndex = (originalStopIndex !== -1 ? originalStopIndex : lastDepartedIndex) + 1;
            newBus.eta = "At Stop";
         }
     }
