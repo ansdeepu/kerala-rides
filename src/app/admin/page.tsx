@@ -64,7 +64,6 @@ export default function AdminPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter();
   const db = useFirestore();
-  const { data: routes, loading: routesLoading } = useCollection<Route>('routes');
 
 
   useEffect(() => {
@@ -90,14 +89,6 @@ export default function AdminPage() {
     },
   });
 
-  const busForm = useForm<BusFormValues>({
-    resolver: zodResolver(busFormSchema),
-    defaultValues: {
-      number: '',
-      routeId: '',
-    },
-  });
-
   const onRouteSubmit = async (data: RouteFormValues) => {
     if (!db || !isAdmin) return;
 
@@ -118,40 +109,6 @@ export default function AdminPage() {
         title: 'Error Creating Route',
         description: error.message,
       });
-    }
-  };
-
-  const onBusSubmit = async (data: BusFormValues) => {
-    if (!db || !isAdmin) return;
-
-    try {
-        const busesCollection = collection(db, 'buses');
-        const selectedRoute = routes?.find(r => r.id === data.routeId);
-        
-        if (!selectedRoute) {
-            throw new Error("Selected route not found.");
-        }
-
-        await addDoc(busesCollection, {
-            number: data.number.toUpperCase(),
-            routeId: data.routeId,
-            currentLocation: selectedRoute.stops[0]?.location || { lat: 0, lng: 0 },
-            status: 'On Time',
-            nextStopIndex: 1,
-            direction: 'forward',
-            updatedAt: serverTimestamp(),
-        });
-        toast({
-            title: 'Bus Created',
-            description: `Bus ${data.number.toUpperCase()} has been added.`,
-        });
-        busForm.reset();
-    } catch (error: any) {
-        toast({
-            variant: 'destructive',
-            title: 'Error Creating Bus',
-            description: error.message,
-        });
     }
   };
 
@@ -187,69 +144,6 @@ export default function AdminPage() {
       </header>
 
       <div className="grid gap-8">
-         <Card>
-          <CardHeader>
-            <CardTitle>Create New Bus</CardTitle>
-            <CardDescription>
-              Add a new bus to the system and assign it to a route.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Form {...busForm}>
-              <form
-                onSubmit={busForm.handleSubmit(onBusSubmit)}
-                className="space-y-6"
-              >
-                <FormField
-                  control={busForm.control}
-                  name="number"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Bus Number</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="e.g., KL-01-A-1234"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                 <FormField
-                  control={busForm.control}
-                  name="routeId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Route</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a route to assign" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {routesLoading ? (
-                            <SelectItem value="loading" disabled>Loading routes...</SelectItem>
-                          ) : (
-                            routes?.map(route => (
-                              <SelectItem key={route.id} value={route.id}>
-                                {route.name}
-                              </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <Button type="submit">Create Bus</Button>
-              </form>
-            </Form>
-          </CardContent>
-        </Card>
-
         <Card>
           <CardHeader>
             <CardTitle>Create New Bus Route</CardTitle>

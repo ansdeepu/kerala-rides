@@ -331,7 +331,7 @@ function StopForm({ route, onFormSubmit }: { route: Route; onFormSubmit: () => v
 
 
 export function RouteManager() {
-  const { data: routes, loading, setData: setRoutes } = useCollection<Route>('routes');
+  const { data: routes, loading } = useCollection<Route>('routes');
   const db = useFirestore();
   const [editingRouteId, setEditingRouteId] = React.useState<string | null>(null);
   const [editingName, setEditingName] = React.useState('');
@@ -398,21 +398,10 @@ export function RouteManager() {
     try {
       await updateDoc(routeRef, { name: editingName });
       toast({ title: 'Route name updated successfully!' });
-      // No need to force refresh, useCollection will update it
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Error updating name', description: error.message });
     } finally {
       handleCancelEditing();
-    }
-  };
-
-  const refreshRouteData = async (routeId: string) => {
-    if (!db || !routes) return;
-    const routeRef = doc(db, 'routes', routeId);
-    const routeSnap = await getDoc(routeRef);
-    if(routeSnap.exists()){
-      const updatedRoute = {id: routeSnap.id, ...routeSnap.data()} as Route;
-      setRoutes(currentRoutes => currentRoutes?.map(r => r.id === routeId ? updatedRoute : r) || []);
     }
   };
 
@@ -508,7 +497,7 @@ export function RouteManager() {
                    )}
                 </div>
                 <AccordionContent>
-                  <StopForm route={route} onFormSubmit={() => refreshRouteData(route.id)} />
+                  <StopForm route={route} onFormSubmit={() => {}} />
                 </AccordionContent>
               </AccordionItem>
             ))}
