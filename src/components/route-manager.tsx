@@ -66,8 +66,8 @@ const formatTo12Hour = (time24: string): string => {
     return `${hour12.toString().padStart(2, '0')}:${minutes} ${suffix}`;
 };
 
-// Function to convert 12h AM/PM format OR 24h format to a consistent 24h string for sorting
-const convertTo24HourForSort = (time: string): string => {
+// Function to convert 12h AM/PM format OR 24h format to a consistent 24h string for sorting and input values
+const convertTo24Hour = (time: string): string => {
     if (!time) return '';
 
     // Check if it's already in 24-hour format (e.g., "14:30")
@@ -110,7 +110,8 @@ function StopForm({ route, onFormSubmit }: { route: Route; onFormSubmit: () => v
     setEditingStop(stop);
     form.reset({
       name: stop.name,
-      arrivalTime: stop.arrivalTime,
+      // Convert to 24h format for the time input
+      arrivalTime: stop.arrivalTime, 
       lat: stop.location.lat,
       lng: stop.location.lng,
     });
@@ -181,8 +182,8 @@ function StopForm({ route, onFormSubmit }: { route: Route; onFormSubmit: () => v
       
       // Sort stops by arrival time before updating
       updatedStops.sort((a, b) => {
-        const timeA = convertTo24HourForSort(a.arrivalTime);
-        const timeB = convertTo24HourForSort(b.arrivalTime);
+        const timeA = convertTo24Hour(a.arrivalTime);
+        const timeB = convertTo24Hour(b.arrivalTime);
         return timeA.localeCompare(timeB);
       });
 
@@ -282,7 +283,7 @@ function StopForm({ route, onFormSubmit }: { route: Route; onFormSubmit: () => v
                   <FormControl>
                     <Input 
                       type="time" 
-                      value={convertTo24HourForSort(field.value)}
+                      value={convertTo24Hour(field.value)}
                       onChange={(e) => field.onChange(formatTo12Hour(e.target.value))}
                     />
                   </FormControl>
